@@ -2,8 +2,10 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import uuid
+import redis.asyncio as aioredis
 
 from database import get_db
+from redis_client import get_redis
 import models
 import schemas
 
@@ -26,7 +28,6 @@ async def create_account(
     """
     Creates a new bank account with an automatically generated account identifier.
     """
-    # Generate a unique synthetic account number (e.g., DE89...)
     generated_iban = f"DE89{uuid.uuid4().hex[:18].upper()}"
 
     new_account = models.Account(
@@ -60,107 +61,6 @@ async def get_account(
         )
 
     return account
-    from sqlalchemy.exc import IntegrityError
-
-@app.post("/transfers", response_model=schemas.TransferResponse, status_code=status.HTTP_200_OK, tags=["Transfers"])
-async def transfer_funds(
-    payload: schemas.TransferRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Executes an atomic funds transfer using pessimistic row-level locking
-    and double-entry ledger bookkeeping.
-    """
-    # 1. Reject transfers to the same account
-    if payload.source_account_id == payload.destination_account_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Source and destination accounts must be different."
-        )
-
-    # 2. Check for existing idempotency key to prevent double execution
-    existing_tx_query = select(models.Transaction).where(
-        models.Transaction.idempotency_key == payload.idempotency_key
-    )
-    tx_result = await db.execute(existing_tx_query)
-    existing_tx = tx_result.scalar_one_or_none()
-
-    if existing_tx:
-        return schemas.TransferResponse(
-            transaction_id=existing_tx.id,
-            idempotency_key=existing_tx.idempotency_key,
-            status=existing_tx.status.value,
-            message="Transfer already processed (Idempotent response)."
-        )
-
-    # 3. Prevent database deadlocks by ordering account IDs for locking
-    first_id = min(payload.source_account_id, payload.destination_account_id)
-    second_id = max(payload.source_account_id, payload.destination_account_id)
-
-    # 4. Acquire pessimistic locks (SELECT ... FOR UPDATE) on both accounts in a deterministic order
-    stmt_first = select(models.Account).where(models.Account.id == first_id).with_for_update()
-    stmt_second = select(models.Account).where(models.Account.id == second_id).with_for_update()
-
-    res_first = await db.execute(stmt_first)
-    res_second = await db.execute(stmt_second)
-
-    acc_first = res_first.scalar_one_or_none()
-    acc_second = res_second.scalar_one_or_none()
-
-    if not acc_first or not acc_second:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="One or both bank accounts do not exist."
-        )
-
-    # Map locked instances back to sender and receiver
-    sender = acc_first if acc_first.id == payload.source_account_id else acc_second
-    receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
-
-    # 5. Verify sufficient available balance
-    if sender.balance < payload.amount:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Insufficient funds. Available: {sender.balance} cents, Required: {payload.amount} cents."
-        )
-
-    # 6. Apply state mutations within the atomic database transaction
-    sender.balance -= payload.amount
-    receiver.balance += payload.amount
-
-    # Create transaction log record
-    transaction_record = models.Transaction(
-        idempotency_key=payload.idempotency_key,
-        status=models.TransactionStatus.COMPLETED
-    )
-    db.add(transaction_record)
-    await db.flush()  # Flush to populate transaction_record.id without committing
-
-    # Create double-entry bookkeeping ledger records
-    debit_entry = models.LedgerEntry(
-        transaction_id=transaction_record.id,
-        account_id=sender.id,
-        amount=payload.amount,
-        entry_type=models.EntryType.DEBIT
-    )
-    credit_entry = models.LedgerEntry(
-        transaction_id=transaction_record.id,
-        account_id=receiver.id,
-        amount=payload.amount,
-        entry_type=models.EntryType.CREDIT
-    )
-
-    db.add_all([debit_entry, credit_entry])
-
-    # Commit all changes atomically (Rolls back automatically on failure)
-    await db.commit()
-
-    return schemas.TransferResponse(
-        transaction_id=transaction_record.id,
-        idempotency_key=transaction_record.idempotency_key,
-        status=transaction_record.status.value,
-        message="Funds transferred successfully."
-    )
 
 @app.get("/accounts/{account_id}/statement", response_model=schemas.AccountStatementResponse, tags=["Accounts"])
 async def get_account_statement(
@@ -170,7 +70,6 @@ async def get_account_statement(
     """
     Fetches the double-entry bookkeeping audit trail for a specific account.
     """
-    # 1. Verify account exists
     acc_query = select(models.Account).where(models.Account.id == account_id)
     acc_result = await db.execute(acc_query)
     account = acc_result.scalar_one_or_none()
@@ -181,7 +80,6 @@ async def get_account_statement(
             detail=f"Account with ID {account_id} not found."
         )
 
-    # 2. Fetch all ledger entries linked to this account ordered by time
     entries_query = (
         select(models.LedgerEntry)
         .where(models.LedgerEntry.account_id == account_id)
@@ -196,3 +94,119 @@ async def get_account_statement(
         current_balance=account.balance,
         entries=entries
     )
+
+@app.post("/transfers", response_model=schemas.TransferResponse, status_code=status.HTTP_200_OK, tags=["Transfers"])
+async def transfer_funds(
+    payload: schemas.TransferRequest,
+    db: AsyncSession = Depends(get_db),
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Executes an atomic funds transfer using Redis fast-fail idempotency checks,
+    pessimistic row-level locking, and double-entry ledger bookkeeping.
+    """
+    # 1. Reject transfers to the same account
+    if payload.source_account_id == payload.destination_account_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Source and destination accounts must be different."
+        )
+
+    # 2. Redis-first fast-path check: prevent duplicate requests before touching PostgreSQL
+    redis_key = f"idempotency:{payload.idempotency_key}"
+    is_new_request = await redis.set(redis_key, "PROCESSING", ex=60, nx=True)
+
+    if not is_new_request:
+        existing_tx_query = select(models.Transaction).where(
+            models.Transaction.idempotency_key == payload.idempotency_key
+        )
+        tx_result = await db.execute(existing_tx_query)
+        existing_tx = tx_result.scalar_one_or_none()
+
+        if existing_tx:
+            return schemas.TransferResponse(
+                transaction_id=existing_tx.id,
+                idempotency_key=existing_tx.idempotency_key,
+                status=existing_tx.status.value,
+                message="Transfer already processed (Redis cached response)."
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A transfer request with this idempotency key is already in progress."
+        )
+
+    try:
+        # 3. Prevent database deadlocks by ordering account IDs for locking
+        first_id = min(payload.source_account_id, payload.destination_account_id)
+        second_id = max(payload.source_account_id, payload.destination_account_id)
+
+        # 4. Acquire pessimistic locks (SELECT ... FOR UPDATE) on both accounts
+        stmt_first = select(models.Account).where(models.Account.id == first_id).with_for_update()
+        stmt_second = select(models.Account).where(models.Account.id == second_id).with_for_update()
+
+        res_first = await db.execute(stmt_first)
+        res_second = await db.execute(stmt_second)
+
+        acc_first = res_first.scalar_one_or_none()
+        acc_second = res_second.scalar_one_or_none()
+
+        if not acc_first or not acc_second:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="One or both bank accounts do not exist."
+            )
+
+        # Map locked instances back to sender and receiver
+        sender = acc_first if acc_first.id == payload.source_account_id else acc_second
+        receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
+
+        # 5. Verify sufficient available balance
+        if sender.balance < payload.amount:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Insufficient funds. Available: {sender.balance} cents, Required: {payload.amount} cents."
+            )
+
+        # 6. Apply state mutations within the atomic database transaction
+        sender.balance -= payload.amount
+        receiver.balance += payload.amount
+
+        # Create transaction log record
+        transaction_record = models.Transaction(
+            idempotency_key=payload.idempotency_key,
+            status=models.TransactionStatus.COMPLETED
+        )
+        db.add(transaction_record)
+        await db.flush()
+
+        # Create double-entry bookkeeping ledger records
+        debit_entry = models.LedgerEntry(
+            transaction_id=transaction_record.id,
+            account_id=sender.id,
+            amount=payload.amount,
+            entry_type=models.EntryType.DEBIT
+        )
+        credit_entry = models.LedgerEntry(
+            transaction_id=transaction_record.id,
+            account_id=receiver.id,
+            amount=payload.amount,
+            entry_type=models.EntryType.CREDIT
+        )
+
+        db.add_all([debit_entry, credit_entry])
+        await db.commit()
+
+        # Update Redis key status to COMPLETED
+        await redis.set(redis_key, "COMPLETED", ex=300)
+
+        return schemas.TransferResponse(
+            transaction_id=transaction_record.id,
+            idempotency_key=transaction_record.idempotency_key,
+            status=transaction_record.status.value,
+            message="Funds transferred successfully."
+        )
+
+    except Exception:
+        await redis.delete(redis_key)
+        raise
