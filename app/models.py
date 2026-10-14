@@ -3,7 +3,7 @@ from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 
-from database import Base
+from app.database import Base
 
 class TransactionStatus(str, enum.Enum):
     PENDING = "PENDING"

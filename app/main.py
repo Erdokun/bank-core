@@ -6,10 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
 
-from database import get_db
-from redis_client import get_redis
-import models
-import schemas
+from app.database import get_db
+from app.redis_client import get_redis
+from app import models, schemas
 
 # Configure structured-style application logger
 logging.basicConfig(
