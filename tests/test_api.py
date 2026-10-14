@@ -6,11 +6,14 @@ BASE_URL = "http://127.0.0.1:8000"
 
 @pytest.mark.asyncio
 async def test_health_check():
-    """Verify service uptime and health check response."""
+    """Verify service uptime, health check response, and tracing headers."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         response = await client.get("/health")
         assert response.status_code == 200
         assert response.json() == {"status": "healthy", "service": "bank-core"}
+        # Verify observability headers are injected by middleware
+        assert "x-request-id" in response.headers
+        assert "x-process-time-ms" in response.headers
 
 @pytest.mark.asyncio
 async def test_create_and_fetch_account():

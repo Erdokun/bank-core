@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+import time
+import uuid
+import logging
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import uuid
 import redis.asyncio as aioredis
 
 from database import get_db
@@ -9,11 +11,40 @@ from redis_client import get_redis
 import models
 import schemas
 
+# Configure structured-style application logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+logger = logging.getLogger("bank-core")
+
 app = FastAPI(
     title="Bank Core Ledger API",
     description="High-concurrency banking engine with double-entry ledger bookkeeping.",
     version="1.0.0"
 )
+
+@app.middleware("http")
+async def request_tracing_middleware(request: Request, call_next):
+    """
+    Intercepts every incoming HTTP request to assign a unique correlation ID (X-Request-ID)
+    and measure execution latency in milliseconds for audit logging.
+    """
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    start_time = time.perf_counter()
+
+    logger.info(f"request_started | request_id={request_id} method={request.method} path={request.url.path}")
+
+    response = await call_next(request)
+
+    process_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time-Ms"] = str(process_time_ms)
+
+    logger.info(
+        f"request_completed | request_id={request_id} status={response.status_code} duration_ms={process_time_ms}"
+    )
+    return response
 
 @app.get("/health", tags=["System"])
 async def health_check():
@@ -105,14 +136,12 @@ async def transfer_funds(
     Executes an atomic funds transfer using Redis fast-fail idempotency checks,
     pessimistic row-level locking, and double-entry ledger bookkeeping.
     """
-    # 1. Reject transfers to the same account
     if payload.source_account_id == payload.destination_account_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Source and destination accounts must be different."
         )
 
-    # 2. Redis-first fast-path check: prevent duplicate requests before touching PostgreSQL
     redis_key = f"idempotency:{payload.idempotency_key}"
     is_new_request = await redis.set(redis_key, "PROCESSING", ex=60, nx=True)
 
@@ -137,11 +166,9 @@ async def transfer_funds(
         )
 
     try:
-        # 3. Prevent database deadlocks by ordering account IDs for locking
         first_id = min(payload.source_account_id, payload.destination_account_id)
         second_id = max(payload.source_account_id, payload.destination_account_id)
 
-        # 4. Acquire pessimistic locks (SELECT ... FOR UPDATE) on both accounts
         stmt_first = select(models.Account).where(models.Account.id == first_id).with_for_update()
         stmt_second = select(models.Account).where(models.Account.id == second_id).with_for_update()
 
@@ -157,22 +184,18 @@ async def transfer_funds(
                 detail="One or both bank accounts do not exist."
             )
 
-        # Map locked instances back to sender and receiver
         sender = acc_first if acc_first.id == payload.source_account_id else acc_second
         receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
 
-        # 5. Verify sufficient available balance
         if sender.balance < payload.amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Insufficient funds. Available: {sender.balance} cents, Required: {payload.amount} cents."
             )
 
-        # 6. Apply state mutations within the atomic database transaction
         sender.balance -= payload.amount
         receiver.balance += payload.amount
 
-        # Create transaction log record
         transaction_record = models.Transaction(
             idempotency_key=payload.idempotency_key,
             status=models.TransactionStatus.COMPLETED
@@ -180,7 +203,6 @@ async def transfer_funds(
         db.add(transaction_record)
         await db.flush()
 
-        # Create double-entry bookkeeping ledger records
         debit_entry = models.LedgerEntry(
             transaction_id=transaction_record.id,
             account_id=sender.id,
@@ -197,7 +219,6 @@ async def transfer_funds(
         db.add_all([debit_entry, credit_entry])
         await db.commit()
 
-        # Update Redis key status to COMPLETED
         await redis.set(redis_key, "COMPLETED", ex=300)
 
         return schemas.TransferResponse(
