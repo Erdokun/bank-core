@@ -1,0 +1,36 @@
+name: Bank Core CI Pipeline
+
+# Trigger pipeline on every push or pull request to master/main branch
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Pull source code into the GitHub runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Build and launch Docker containers (PostgreSQL, Redis, FastAPI)
+      - name: Start multi-container environment
+        run: docker compose up --build -d
+
+      # 3. Wait briefly for API service readiness and initialize schema
+      - name: Initialize database schema inside container
+        run: |
+          sleep 5
+          docker exec bank_api python init_db.py
+
+      # 4. Execute automated test suite inside the container
+      - name: Run automated pytest suite
+        run: docker exec bank_api pytest -v
+
+      # 5. Tear down environment after tests complete
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
