@@ -1,8 +1,12 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import String, BigInteger, DateTime, ForeignKey, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class TransactionStatus(str, enum.Enum):
@@ -30,6 +34,7 @@ class Account(Base):
     balance: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=utc_now,
         server_default=func.now()
     )
 
@@ -46,6 +51,7 @@ class Transaction(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=utc_now,
         server_default=func.now()
     )
 
@@ -60,6 +66,7 @@ class LedgerEntry(Base):
     entry_type: Mapped[EntryType] = mapped_column(Enum(EntryType), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=utc_now,
         server_default=func.now()
     )
 
@@ -78,5 +85,6 @@ class User(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=utc_now,
         server_default=func.now()
     )
