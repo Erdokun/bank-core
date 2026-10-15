@@ -1,57 +1,82 @@
-from datetime import datetime
-from sqlalchemy import BigInteger, String, DateTime, ForeignKey, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
-
+from datetime import datetime
+from sqlalchemy import String, BigInteger, DateTime, ForeignKey, Enum, func
+from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
+
 
 class TransactionStatus(str, enum.Enum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
+
 class EntryType(str, enum.Enum):
-    DEBIT = "DEBIT"    # Para çıkışı
-    CREDIT = "CREDIT"  # Para girişi
+    DEBIT = "DEBIT"
+    CREDIT = "CREDIT"
+
+
+class UserRole(str, enum.Enum):
+    CUSTOMER = "CUSTOMER"
+    AUDITOR = "AUDITOR"
+
 
 class Account(Base):
     __tablename__ = "accounts"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    account_number: Mapped[str] = mapped_column(String(34), unique=True, index=True)
-    owner_name: Mapped[str] = mapped_column(String(100))
-    # Para cent/kuruş cinsinden BigInteger olarak saklanır
-    balance: Mapped[int] = mapped_column(BigInteger, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    account_number: Mapped[str] = mapped_column(String(34), unique=True, index=True, nullable=False)
+    owner_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    balance: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
 
-    ledger_entries: Mapped[list["LedgerEntry"]] = relationship(back_populates="account")
 
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    # Aynı isteğin iki kez işlenmesini önleyen benzersiz anahtar
-    idempotency_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     status: Mapped[TransactionStatus] = mapped_column(
-        SQLEnum(TransactionStatus), default=TransactionStatus.PENDING
+        Enum(TransactionStatus),
+        default=TransactionStatus.PENDING,
+        nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
 
-    entries: Mapped[list["LedgerEntry"]] = relationship(back_populates="transaction")
 
 class LedgerEntry(Base):
-    """
-    Çift taraflı muhasebe defteri (Double-Entry Bookkeeping).
-    Bir transferde en az iki kayıt oluşur: bir hesaptan DEBIT, diğer hesaba CREDIT.
-    """
     __tablename__ = "ledger_entries"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    transaction_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), index=True)
-    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
-    amount: Mapped[int] = mapped_column(BigInteger)  # Pozitif cent değeri
-    entry_type: Mapped[EntryType] = mapped_column(SQLEnum(EntryType))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    transaction_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), index=True, nullable=False)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True, nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    entry_type: Mapped[EntryType] = mapped_column(Enum(EntryType), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
 
-    transaction: Mapped["Transaction"] = relationship(back_populates="entries")
-    account: Mapped["Account"] = relationship(back_populates="ledger_entries")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole),
+        default=UserRole.CUSTOMER,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )

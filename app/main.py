@@ -1,14 +1,16 @@
 import time
 import uuid
 import logging
+import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from app.database import get_db
 from app.redis_client import get_redis
-from app import models, schemas
+from app import models, schemas, security
 
 # Configure structured-style application logger
 logging.basicConfig(
@@ -19,9 +21,45 @@ logger = logging.getLogger("bank-core")
 
 app = FastAPI(
     title="Bank Core Ledger API",
-    description="High-concurrency banking engine with double-entry ledger bookkeeping.",
-    version="1.0.0"
+    description="High-concurrency banking engine with double-entry ledger bookkeeping and JWT security.",
+    version="1.1.0"
 )
+
+# Bearer token security scheme for Swagger UI Authorize button
+security_scheme = HTTPBearer()
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> models.User:
+    """
+    Validates the Bearer JWT token from the Authorization header
+    and fetches the authenticated user from PostgreSQL.
+    """
+    token = credentials.credentials
+    try:
+        payload = security.decode_access_token(token)
+        user_id = int(payload.get("sub"))
+    except (jwt.PyJWTError, ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    query = select(models.User).where(models.User.id == user_id)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User no longer exists."
+        )
+
+    return user
+
 
 @app.middleware("http")
 async def request_tracing_middleware(request: Request, call_next):
@@ -45,10 +83,79 @@ async def request_tracing_middleware(request: Request, call_next):
     )
     return response
 
+
 @app.get("/health", tags=["System"])
 async def health_check():
     """Endpoint to verify API service uptime."""
     return {"status": "healthy", "service": "bank-core"}
+
+
+@app.post("/auth/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED, tags=["Auth"])
+async def register_user(
+    payload: schemas.UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Registers a new user with an Argon2id hashed password.
+    """
+    existing_query = select(models.User).where(models.User.email == payload.email)
+    existing_result = await db.execute(existing_query)
+    if existing_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email address is already registered."
+        )
+
+    new_user = models.User(
+        email=payload.email,
+        full_name=payload.full_name,
+        hashed_password=security.hash_password(payload.password),
+        role=models.UserRole.CUSTOMER
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    return new_user
+
+
+@app.post("/auth/login", response_model=schemas.TokenResponse, tags=["Auth"])
+async def login_user(
+    payload: schemas.LoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Authenticates user credentials and returns a signed JWT access token.
+    """
+    query = select(models.User).where(models.User.email == payload.email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user or not security.verify_password(payload.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password."
+        )
+
+    access_token = security.create_access_token(
+        user_id=user.id,
+        email=user.email,
+        role=user.role.value
+    )
+
+    return schemas.TokenResponse(access_token=access_token)
+
+
+@app.get("/auth/me", response_model=schemas.UserResponse, tags=["Auth"])
+async def get_my_profile(
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Returns the profile of the currently authenticated user based on their JWT token.
+    """
+    return current_user
+
 
 @app.post("/accounts", response_model=schemas.AccountResponse, status_code=status.HTTP_201_CREATED, tags=["Accounts"])
 async def create_account(
@@ -72,6 +179,7 @@ async def create_account(
 
     return new_account
 
+
 @app.get("/accounts/{account_id}", response_model=schemas.AccountResponse, tags=["Accounts"])
 async def get_account(
     account_id: int,
@@ -91,6 +199,7 @@ async def get_account(
         )
 
     return account
+
 
 @app.get("/accounts/{account_id}/statement", response_model=schemas.AccountStatementResponse, tags=["Accounts"])
 async def get_account_statement(
@@ -124,6 +233,7 @@ async def get_account_statement(
         current_balance=account.balance,
         entries=entries
     )
+
 
 @app.post("/transfers", response_model=schemas.TransferResponse, status_code=status.HTTP_200_OK, tags=["Transfers"])
 async def transfer_funds(
