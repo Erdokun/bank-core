@@ -1,6 +1,7 @@
 import time
 import uuid
 import logging
+from typing import List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -21,8 +22,8 @@ logger = logging.getLogger("bank-core")
 
 app = FastAPI(
     title="Bank Core Ledger API",
-    description="High-concurrency banking engine with double-entry ledger bookkeeping and JWT security.",
-    version="1.1.0"
+    description="High-concurrency banking engine with double-entry ledger bookkeeping, JWT auth, and RBAC.",
+    version="1.2.0"
 )
 
 # Bearer token security scheme for Swagger UI Authorize button
@@ -96,7 +97,7 @@ async def register_user(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Registers a new user with an Argon2id hashed password.
+    Registers a new user with an Argon2id hashed password and assigned RBAC role.
     """
     existing_query = select(models.User).where(models.User.email == payload.email)
     existing_result = await db.execute(existing_query)
@@ -110,7 +111,7 @@ async def register_user(
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=security.hash_password(payload.password),
-        role=models.UserRole.CUSTOMER
+        role=payload.role
     )
 
     db.add(new_user)
@@ -160,16 +161,19 @@ async def get_my_profile(
 @app.post("/accounts", response_model=schemas.AccountResponse, status_code=status.HTTP_201_CREATED, tags=["Accounts"])
 async def create_account(
     payload: schemas.AccountCreate,
+    current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Creates a new bank account with an automatically generated account identifier.
+    Creates a new bank account bound to the currently authenticated user.
     """
     generated_iban = f"DE89{uuid.uuid4().hex[:18].upper()}"
+    owner_name = payload.owner_name if payload.owner_name else current_user.full_name
 
     new_account = models.Account(
+        user_id=current_user.id,
         account_number=generated_iban,
-        owner_name=payload.owner_name,
+        owner_name=owner_name,
         balance=payload.initial_balance
     )
 
@@ -180,13 +184,31 @@ async def create_account(
     return new_account
 
 
-@app.get("/accounts/{account_id}", response_model=schemas.AccountResponse, tags=["Accounts"])
-async def get_account(
-    account_id: int,
+@app.get("/accounts/me", response_model=List[schemas.AccountResponse], tags=["Accounts"])
+async def get_my_accounts(
+    current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Fetches an existing account by its unique primary key identifier.
+    Lists all bank accounts owned by the currently authenticated user.
+    """
+    query = (
+        select(models.Account)
+        .where(models.Account.user_id == current_user.id)
+        .order_by(models.Account.id.asc())
+    )
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@app.get("/accounts/{account_id}", response_model=schemas.AccountResponse, tags=["Accounts"])
+async def get_account(
+    account_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Fetches an account by ID. Enforces ownership or AUDITOR role.
     """
     query = select(models.Account).where(models.Account.id == account_id)
     result = await db.execute(query)
@@ -198,16 +220,23 @@ async def get_account(
             detail=f"Account with ID {account_id} not found."
         )
 
+    if account.user_id != current_user.id and current_user.role != models.UserRole.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to view this account."
+        )
+
     return account
 
 
 @app.get("/accounts/{account_id}/statement", response_model=schemas.AccountStatementResponse, tags=["Accounts"])
 async def get_account_statement(
     account_id: int,
+    current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Fetches the double-entry bookkeeping audit trail for a specific account.
+    Fetches the double-entry audit trail for an account. Accessible by owner or AUDITOR.
     """
     acc_query = select(models.Account).where(models.Account.id == account_id)
     acc_result = await db.execute(acc_query)
@@ -217,6 +246,12 @@ async def get_account_statement(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Account with ID {account_id} not found."
+        )
+
+    if account.user_id != current_user.id and current_user.role != models.UserRole.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only the account owner or an auditor can view statements."
         )
 
     entries_query = (
@@ -238,12 +273,13 @@ async def get_account_statement(
 @app.post("/transfers", response_model=schemas.TransferResponse, status_code=status.HTTP_200_OK, tags=["Transfers"])
 async def transfer_funds(
     payload: schemas.TransferRequest,
+    current_user: models.User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     redis: aioredis.Redis = Depends(get_redis)
 ):
     """
-    Executes an atomic funds transfer using Redis fast-fail idempotency checks,
-    pessimistic row-level locking, and double-entry ledger bookkeeping.
+    Executes an atomic funds transfer. Strictly verifies that the authenticated user
+    owns the source account before deducting funds.
     """
     if payload.source_account_id == payload.destination_account_id:
         raise HTTPException(
@@ -295,6 +331,13 @@ async def transfer_funds(
 
         sender = acc_first if acc_first.id == payload.source_account_id else acc_second
         receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
+
+        # Enforce strict account ownership (Segregation of Duties: even AUDITOR cannot transfer)
+        if sender.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You can only transfer funds from your own account."
+            )
 
         if sender.balance < payload.amount:
             raise HTTPException(

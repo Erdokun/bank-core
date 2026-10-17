@@ -25,10 +25,30 @@ class UserRole(str, enum.Enum):
     AUDITOR = "AUDITOR"
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole),
+        default=UserRole.CUSTOMER,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        server_default=func.now()
+    )
+
+
 class Account(Base):
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     account_number: Mapped[str] = mapped_column(String(34), unique=True, index=True, nullable=False)
     owner_name: Mapped[str] = mapped_column(String(100), nullable=False)
     balance: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
@@ -64,25 +84,6 @@ class LedgerEntry(Base):
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True, nullable=False)
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     entry_type: Mapped[EntryType] = mapped_column(Enum(EntryType), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=utc_now,
-        server_default=func.now()
-    )
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole),
-        default=UserRole.CUSTOMER,
-        nullable=False
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

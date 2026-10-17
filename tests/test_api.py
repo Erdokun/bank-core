@@ -5,6 +5,31 @@ import uuid
 BASE_URL = "http://127.0.0.1:8000"
 
 
+async def create_authenticated_user(client: httpx.AsyncClient, role: str = "CUSTOMER") -> dict:
+    """Helper function to register a user, login, and return auth headers + user info."""
+    email = f"user_{uuid.uuid4().hex[:8]}@bank.de"
+    password = "StrongPassword123!"
+    reg_res = await client.post("/auth/register", json={
+        "email": email,
+        "full_name": "Test User",
+        "password": password,
+        "role": role
+    })
+    assert reg_res.status_code == 201
+
+    login_res = await client.post("/auth/login", json={
+        "email": email,
+        "password": password
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
+
+    return {
+        "user": reg_res.json(),
+        "headers": {"Authorization": f"Bearer {token}"}
+    }
+
+
 @pytest.mark.asyncio
 async def test_health_check():
     """Verify service uptime, health check response, and tracing headers."""
@@ -27,26 +52,21 @@ async def test_user_registration_and_jwt_flow():
             "password": "StrongPassword123!"
         }
 
-        # 1. Register a new user
         res_reg = await client.post("/auth/register", json=user_payload)
         assert res_reg.status_code == 201
         assert res_reg.json()["email"] == unique_email
         assert res_reg.json()["role"] == "CUSTOMER"
 
-        # 2. Attempt duplicate registration with same email -> Expect 409 Conflict
         res_dup = await client.post("/auth/register", json=user_payload)
         assert res_dup.status_code == 409
 
-        # 3. Login with valid credentials -> Expect JWT access token
         res_login = await client.post("/auth/login", json={
             "email": unique_email,
             "password": "StrongPassword123!"
         })
         assert res_login.status_code == 200
         token = res_login.json()["access_token"]
-        assert token is not None
 
-        # 4. Access protected /auth/me endpoint using Bearer token
         res_me = await client.get(
             "/auth/me",
             headers={"Authorization": f"Bearer {token}"}
@@ -59,14 +79,12 @@ async def test_user_registration_and_jwt_flow():
 async def test_invalid_login_and_unauthorized_access():
     """Verify wrong password rejection (401) and missing token rejection."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # 1. Login with non-existent account
         res_bad_login = await client.post("/auth/login", json={
             "email": "ghost@bank.de",
             "password": "WrongPassword123!"
         })
         assert res_bad_login.status_code == 401
 
-        # 2. Call /auth/me with forged/invalid JWT token
         res_forged = await client.get(
             "/auth/me",
             headers={"Authorization": "Bearer invalid.forged.token"}
@@ -76,19 +94,25 @@ async def test_invalid_login_and_unauthorized_access():
 
 @pytest.mark.asyncio
 async def test_create_and_fetch_account():
-    """Verify account provisioning and balance initialization."""
+    """Verify authenticated account provisioning and /accounts/me listing."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        create_payload = {
-            "owner_name": "Test User",
-            "initial_balance": 10000
-        }
-        res_create = await client.post("/accounts", json=create_payload)
+        auth = await create_authenticated_user(client)
+
+        res_create = await client.post(
+            "/accounts",
+            json={"owner_name": "Erdem Main Account", "initial_balance": 10000},
+            headers=auth["headers"]
+        )
         assert res_create.status_code == 201
         account_data = res_create.json()
-        assert account_data["owner_name"] == "Test User"
         assert account_data["balance"] == 10000
+        assert account_data["user_id"] == auth["user"]["id"]
 
-        res_get = await client.get(f"/accounts/{account_data['id']}")
+        res_me_accounts = await client.get("/accounts/me", headers=auth["headers"])
+        assert res_me_accounts.status_code == 200
+        assert len(res_me_accounts.json()) == 1
+
+        res_get = await client.get(f"/accounts/{account_data['id']}", headers=auth["headers"])
         assert res_get.status_code == 200
         assert res_get.json()["id"] == account_data["id"]
 
@@ -97,8 +121,19 @@ async def test_create_and_fetch_account():
 async def test_successful_transfer_and_idempotency():
     """Verify atomic fund transfers and Redis fast-path idempotency."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        acc1 = (await client.post("/accounts", json={"owner_name": "Sender", "initial_balance": 20000})).json()
-        acc2 = (await client.post("/accounts", json={"owner_name": "Recipient", "initial_balance": 5000})).json()
+        sender_auth = await create_authenticated_user(client)
+        receiver_auth = await create_authenticated_user(client)
+
+        acc1 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Sender", "initial_balance": 20000},
+            headers=sender_auth["headers"]
+        )).json()
+        acc2 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Recipient", "initial_balance": 5000},
+            headers=receiver_auth["headers"]
+        )).json()
 
         idem_key = f"pytest-key-{uuid.uuid4().hex}"
         transfer_payload = {
@@ -108,11 +143,11 @@ async def test_successful_transfer_and_idempotency():
             "idempotency_key": idem_key
         }
 
-        res_transfer = await client.post("/transfers", json=transfer_payload)
+        res_transfer = await client.post("/transfers", json=transfer_payload, headers=sender_auth["headers"])
         assert res_transfer.status_code == 200
         assert res_transfer.json()["status"] == "COMPLETED"
 
-        res_duplicate = await client.post("/transfers", json=transfer_payload)
+        res_duplicate = await client.post("/transfers", json=transfer_payload, headers=sender_auth["headers"])
         assert res_duplicate.status_code == 200
         assert "already processed" in res_duplicate.json()["message"]
 
@@ -121,8 +156,19 @@ async def test_successful_transfer_and_idempotency():
 async def test_insufficient_funds_rejection():
     """Verify transactions are rejected when sender lacks necessary balance."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        acc1 = (await client.post("/accounts", json={"owner_name": "Poor Sender", "initial_balance": 1000})).json()
-        acc2 = (await client.post("/accounts", json={"owner_name": "Receiver", "initial_balance": 0})).json()
+        sender_auth = await create_authenticated_user(client)
+        receiver_auth = await create_authenticated_user(client)
+
+        acc1 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Poor Sender", "initial_balance": 1000},
+            headers=sender_auth["headers"]
+        )).json()
+        acc2 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Receiver", "initial_balance": 0},
+            headers=receiver_auth["headers"]
+        )).json()
 
         payload = {
             "source_account_id": acc1["id"],
@@ -131,6 +177,58 @@ async def test_insufficient_funds_rejection():
             "idempotency_key": f"pytest-overdraft-{uuid.uuid4().hex}"
         }
 
-        res = await client.post("/transfers", json=payload)
+        res = await client.post("/transfers", json=payload, headers=sender_auth["headers"])
         assert res.status_code == 400
         assert "Insufficient funds" in res.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_unauthorized_transfer_and_auditor_rbac():
+    """
+    Verify 403 Forbidden when a customer tries to steal funds or read another user's statement,
+    and verify AUDITOR role can inspect statements but cannot initiate transfers.
+    """
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        victim_auth = await create_authenticated_user(client, role="CUSTOMER")
+        attacker_auth = await create_authenticated_user(client, role="CUSTOMER")
+        auditor_auth = await create_authenticated_user(client, role="AUDITOR")
+
+        victim_acc = (await client.post(
+            "/accounts",
+            json={"owner_name": "Victim Account", "initial_balance": 50000},
+            headers=victim_auth["headers"]
+        )).json()
+        attacker_acc = (await client.post(
+            "/accounts",
+            json={"owner_name": "Attacker Account", "initial_balance": 0},
+            headers=attacker_auth["headers"]
+        )).json()
+
+        # 1. Attacker attempts to transfer money out of Victim's account -> Expect 403 Forbidden
+        steal_payload = {
+            "source_account_id": victim_acc["id"],
+            "destination_account_id": attacker_acc["id"],
+            "amount": 10000,
+            "idempotency_key": f"steal-attempt-{uuid.uuid4().hex}"
+        }
+        res_steal = await client.post("/transfers", json=steal_payload, headers=attacker_auth["headers"])
+        assert res_steal.status_code == 403
+
+        # 2. Attacker attempts to view Victim's account statement -> Expect 403 Forbidden
+        res_spy = await client.get(f"/accounts/{victim_acc['id']}/statement", headers=attacker_auth["headers"])
+        assert res_spy.status_code == 403
+
+        # 3. AUDITOR inspects Victim's account statement -> Expect 200 OK
+        res_audit = await client.get(f"/accounts/{victim_acc['id']}/statement", headers=auditor_auth["headers"])
+        assert res_audit.status_code == 200
+        assert res_audit.json()["current_balance"] == 50000
+
+        # 4. AUDITOR attempts to transfer money from Victim's account -> Expect 403 Forbidden
+        auditor_transfer_payload = {
+            "source_account_id": victim_acc["id"],
+            "destination_account_id": attacker_acc["id"],
+            "amount": 1000,
+            "idempotency_key": f"auditor-attempt-{uuid.uuid4().hex}"
+        }
+        res_auditor_tx = await client.post("/transfers", json=auditor_transfer_payload, headers=auditor_auth["headers"])
+        assert res_auditor_tx.status_code == 403

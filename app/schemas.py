@@ -1,15 +1,17 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
+from app.models import UserRole
 
 
 class AccountCreate(BaseModel):
-    owner_name: str = Field(..., min_length=2, max_length=100, examples=["Erdem Celik"])
+    owner_name: Optional[str] = Field(default=None, max_length=100, examples=["Erdem Celik"])
     initial_balance: int = Field(default=0, ge=0, description="Initial balance in cents (e.g., 10000 = 100.00 EUR)")
 
 
 class AccountResponse(BaseModel):
     id: int
+    user_id: int
     account_number: str
     owner_name: str
     balance: int
@@ -53,6 +55,7 @@ class UserCreate(BaseModel):
     email: str = Field(..., min_length=5, max_length=255, examples=["erdem@bank.de"])
     full_name: str = Field(..., min_length=2, max_length=100, examples=["Erdem Celik"])
     password: str = Field(..., min_length=8, max_length=128, examples=["StrongPass123!"])
+    role: UserRole = Field(default=UserRole.CUSTOMER, examples=["CUSTOMER"])
 
 
 class UserResponse(BaseModel):
