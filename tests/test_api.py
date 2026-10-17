@@ -232,3 +232,57 @@ async def test_unauthorized_transfer_and_auditor_rbac():
         }
         res_auditor_tx = await client.post("/transfers", json=auditor_transfer_payload, headers=auditor_auth["headers"])
         assert res_auditor_tx.status_code == 403
+
+@pytest.mark.asyncio
+async def test_anti_fraud_aml_and_redis_rate_limiting():
+    """
+    Verify AML compliance blocks single transfers over 10,000 EUR (422)
+    and Redis rate limiter blocks excessive transfer attempts (>10/min) with 429.
+    """
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        sender_auth = await create_authenticated_user(client)
+        receiver_auth = await create_authenticated_user(client)
+
+        acc1 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Whale Sender", "initial_balance": 5_000_000},
+            headers=sender_auth["headers"]
+        )).json()
+        acc2 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Receiver", "initial_balance": 0},
+            headers=receiver_auth["headers"]
+        )).json()
+
+        # 1. Attempt single transfer of 15,000.00 EUR (1,500,000 cents) -> Expect 422 AML Alert (Attempt #1)
+        aml_payload = {
+            "source_account_id": acc1["id"],
+            "destination_account_id": acc2["id"],
+            "amount": 1_500_000,
+            "idempotency_key": f"aml-test-{uuid.uuid4().hex}"
+        }
+        res_aml = await client.post("/transfers", json=aml_payload, headers=sender_auth["headers"])
+        assert res_aml.status_code == 422
+        assert "Anti-Fraud AML Alert" in res_aml.json()["detail"]
+
+        # 2. Fire 9 valid small transfers (Attempts #2 through #10) -> Expect 200 OK
+        for _ in range(9):
+            small_payload = {
+                "source_account_id": acc1["id"],
+                "destination_account_id": acc2["id"],
+                "amount": 100,
+                "idempotency_key": f"rate-ok-{uuid.uuid4().hex}"
+            }
+            res_ok = await client.post("/transfers", json=small_payload, headers=sender_auth["headers"])
+            assert res_ok.status_code == 200
+
+        # 3. Fire the 11th transfer within the same minute -> Expect 429 Too Many Requests
+        spam_payload = {
+            "source_account_id": acc1["id"],
+            "destination_account_id": acc2["id"],
+            "amount": 100,
+            "idempotency_key": f"rate-blocked-{uuid.uuid4().hex}"
+        }
+        res_rate_limit = await client.post("/transfers", json=spam_payload, headers=sender_auth["headers"])
+        assert res_rate_limit.status_code == 429
+        assert "Rate limit exceeded" in res_rate_limit.json()["detail"]        

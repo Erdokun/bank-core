@@ -11,7 +11,7 @@ import redis.asyncio as aioredis
 
 from app.database import get_db
 from app.redis_client import get_redis
-from app import models, schemas, security
+from app import models, schemas, security, guards
 
 # Configure structured-style application logger
 logging.basicConfig(
@@ -22,8 +22,8 @@ logger = logging.getLogger("bank-core")
 
 app = FastAPI(
     title="Bank Core Ledger API",
-    description="High-concurrency banking engine with double-entry ledger bookkeeping, JWT auth, and RBAC.",
-    version="1.2.0"
+    description="High-concurrency banking engine with double-entry ledger bookkeeping, JWT auth, RBAC, and Anti-Fraud guards.",
+    version="1.3.0"
 )
 
 # Bearer token security scheme for Swagger UI Authorize button
@@ -278,15 +278,23 @@ async def transfer_funds(
     redis: aioredis.Redis = Depends(get_redis)
 ):
     """
-    Executes an atomic funds transfer. Strictly verifies that the authenticated user
-    owns the source account before deducting funds.
+    Executes an atomic funds transfer protected by Redis Rate Limiting,
+    Anti-Fraud AML compliance rules, Redis Idempotency, and PostgreSQL row locking.
     """
+    # 1. Redis Rate Limiting Guard (Max 10 attempts per minute per user)
+    await guards.check_transfer_rate_limit(current_user.id, redis)
+
+    # 2. Basic validation
     if payload.source_account_id == payload.destination_account_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Source and destination accounts must be different."
         )
 
+    # 3. Anti-Fraud / AML Compliance Guard (Max 10,000.00 EUR per single transfer)
+    guards.evaluate_anti_fraud_rules(payload.amount)
+
+    # 4. Redis Fast-Path Idempotency Check
     redis_key = f"idempotency:{payload.idempotency_key}"
     is_new_request = await redis.set(redis_key, "PROCESSING", ex=60, nx=True)
 
@@ -332,7 +340,6 @@ async def transfer_funds(
         sender = acc_first if acc_first.id == payload.source_account_id else acc_second
         receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
 
-        # Enforce strict account ownership (Segregation of Duties: even AUDITOR cannot transfer)
         if sender.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
