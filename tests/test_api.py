@@ -285,4 +285,50 @@ async def test_anti_fraud_aml_and_redis_rate_limiting():
         }
         res_rate_limit = await client.post("/transfers", json=spam_payload, headers=sender_auth["headers"])
         assert res_rate_limit.status_code == 429
-        assert "Rate limit exceeded" in res_rate_limit.json()["detail"]        
+        assert "Rate limit exceeded" in res_rate_limit.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_anti_fraud_aml_and_redis_rate_limiting():
+    """Verify AML blocks >10k EUR (422) and Redis rate limiter blocks >10 req/min (429)."""
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        sender_auth = await create_authenticated_user(client)
+        receiver_auth = await create_authenticated_user(client)
+
+        acc1 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Whale Sender", "initial_balance": 5_000_000},
+            headers=sender_auth["headers"]
+        )).json()
+        acc2 = (await client.post(
+            "/accounts",
+            json={"owner_name": "Receiver", "initial_balance": 0},
+            headers=receiver_auth["headers"]
+        )).json()
+
+        # 1. 10.000 EUR üstü transfer denemesi -> 422 Beklenir
+        res_aml = await client.post("/transfers", json={
+            "source_account_id": acc1["id"],
+            "destination_account_id": acc2["id"],
+            "amount": 1_500_000,
+            "idempotency_key": f"aml-{uuid.uuid4().hex}"
+        }, headers=sender_auth["headers"])
+        assert res_aml.status_code == 422
+
+        # 2. 9 adet geçerli ufak transfer gönder (Sayaç: 2..10) -> 200 OK
+        for _ in range(9):
+            res_ok = await client.post("/transfers", json={
+                "source_account_id": acc1["id"],
+                "destination_account_id": acc2["id"],
+                "amount": 100,
+                "idempotency_key": f"rate-ok-{uuid.uuid4().hex}"
+            }, headers=sender_auth["headers"])
+            assert res_ok.status_code == 200
+
+        # 3. Aynı dakika içindeki 11. transfer denemesi -> 429 Too Many Requests
+        res_rate = await client.post("/transfers", json={
+            "source_account_id": acc1["id"],
+            "destination_account_id": acc2["id"],
+            "amount": 100,
+            "idempotency_key": f"rate-block-{uuid.uuid4().hex}"
+        }, headers=sender_auth["headers"])
+        assert res_rate.status_code == 429        

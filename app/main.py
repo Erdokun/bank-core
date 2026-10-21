@@ -283,6 +283,7 @@ async def transfer_funds(
     """
     # 1. Redis Rate Limiting Guard (Max 10 attempts per minute per user)
     await guards.check_transfer_rate_limit(current_user.id, redis)
+    guards.evaluate_anti_fraud_rules(payload.amount)
 
     # 2. Basic validation
     if payload.source_account_id == payload.destination_account_id:
