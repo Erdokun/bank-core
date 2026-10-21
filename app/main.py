@@ -4,6 +4,8 @@ import logging
 from typing import List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
+import os
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -391,3 +393,10 @@ async def transfer_funds(
     except Exception:
         await redis.delete(redis_key)
         raise
+
+@app.get("/", response_class=HTMLResponse, tags=["Frontend"])
+async def serve_banking_ui():
+    """Serves the FinTech web application dashboard."""
+    html_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
