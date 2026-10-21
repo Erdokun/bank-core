@@ -76,3 +76,28 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class OtpSendRequest(BaseModel):
+    email: str = Field(..., examples=["user@veyra.com"])
+
+
+class OtpSendResponse(BaseModel):
+    status: str
+    email: str
+    expires_in: int = 300
+    dev_otp: Optional[str] = None
+    html_preview: Optional[str] = None
+
+
+class OtpVerifyRequest(BaseModel):
+    email: str
+    code: str = Field(..., min_length=6, max_length=6, examples=["849201"])
+    password: Optional[str] = None
+    full_name: Optional[str] = None
+
+
+class OtpVerifyResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
