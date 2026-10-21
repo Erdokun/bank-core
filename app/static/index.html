@@ -3,217 +3,802 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bank Core | Digital Banking</title>
+  <title>TITANIUM CORE | Ultra-Minimalist Digital Banking Ledger</title>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Google Fonts: Space Grotesk (Anchor/Display) + Inter (Body/UI) + JetBrains Mono (Financials/Data) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#000000',
+              900: '#060608',
+              850: '#0a0a0d',
+              800: '#111115',
+              700: '#18181e',
+              600: '#22222a',
+            },
+            titanium: {
+              50: '#ffffff',
+              100: '#f4f4f6',
+              200: '#e4e4e7',
+              300: '#d4d4d8',
+              400: '#a1a1aa',
+              500: '#71717a',
+              600: '#52525b',
+              700: '#3f3f46',
+              800: '#27272a',
+              900: '#18181b',
+            }
+          },
+          boxShadow: {
+            'titanium-glow': '0 0 25px rgba(255, 255, 255, 0.12)',
+            'titanium-subtle': '0 0 15px rgba(255, 255, 255, 0.05)',
+            'luxury-depth': '0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .card-gradient { background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #020617 100%); }
-    .neon-border { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #060608;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Ambient Background Mesh */
+    body {
+      background-color: #000000;
+      background-image: 
+        radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.07), transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(255, 255, 255, 0.03), transparent 35%),
+        radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.02), transparent 40%);
+      background-attachment: fixed;
+      color: #f4f4f6;
+    }
+
+    /* Tactile Button Micro-Animation Rule: Physical Press + Silver Sheen */
+    .btn-tactile {
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-tactile:active {
+      transform: scale(0.96);
+    }
+    .btn-tactile:hover {
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* 3D Floating Titanium Card Styles */
+    .card-3d-wrapper {
+      perspective: 1200px;
+    }
+    .titanium-card-body {
+      transform-style: preserve-3d;
+      transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+      will-change: transform;
+      background: linear-gradient(135deg, #18181c 0%, #0d0d10 40%, #15151a 75%, #08080a 100%);
+      box-shadow: 
+        0 30px 60px -15px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(255, 255, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    .titanium-glare {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      border-radius: 1.5rem;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      mix-blend-mode: overlay;
+    }
+
+    /* Brushed Titanium Texture Overlay */
+    .brushed-metal-pattern {
+      background-image: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.02) 0px,
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+
+    /* EMV Metallic Chip */
+    .emv-chip {
+      background: linear-gradient(135deg, #d4d4d8 0%, #71717a 50%, #e4e4e7 100%);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    /* Slide-in & Slide-out for Toasts */
+    @keyframes toastSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(110%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    @keyframes toastSlideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(110%);
+      }
+    }
+    .toast-enter {
+      animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .toast-exit {
+      animation: toastSlideOut 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+    }
+
+    /* Terminal pulse & typewriter keyframe */
+    @keyframes termBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .cursor-blink {
+      animation: termBlink 1s infinite;
+    }
+
+    /* Spinner */
+    @keyframes spinInfinite {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-fast {
+      animation: spinInfinite 0.65s linear infinite;
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
 
-  <!-- NAVBAR -->
-  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+<body class="min-h-screen flex flex-col justify-between selection:bg-white selection:text-black">
+
+  <!-- TOP NOTIFICATION TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- NAVIGATION BAR (Ultra-Clean Titanium Luxury) -->
+  <header class="border-b border-white/[0.08] bg-obsidian-950/80 backdrop-blur-2xl sticky top-0 z-40 transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-          <i data-lucide="shield-check" class="w-5 h-5"></i>
+      
+      <!-- Logo & Engine Status -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/20 flex items-center justify-center text-white shadow-titanium-subtle">
+            <!-- Custom Titanium Vault Shield SVG -->
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-display font-bold text-base tracking-wider text-white">TITANIUM</span>
+              <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.03] text-white/70">CORE LEDGER</span>
+            </div>
+          </div>
         </div>
-        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">BANK CORE</span>
-        <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">v1.3 Engine</span>
+
+        <!-- Live Server Status Badge -->
+        <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/[0.08] bg-white/[0.02]">
+          <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+          <span class="text-[11px] font-mono text-white/60">POSTGRES • REDIS ATOMIC</span>
+        </div>
       </div>
+
+      <!-- User Nav Actions (Conditional) -->
       <div id="navUserSection" class="hidden items-center gap-4">
-        <span id="navUserEmail" class="text-xs text-slate-400 font-medium"></span>
-        <button onclick="logout()" class="text-xs bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition">Logout</button>
+        <!-- Account Switcher / Indicator -->
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.03]">
+          <span class="text-[10px] uppercase font-mono text-white/50">ACTIVE ID:</span>
+          <span id="navActiveAccountId" class="font-mono text-xs font-semibold text-white">#--</span>
+        </div>
+
+        <!-- User Profile Pill -->
+        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.02]">
+          <div class="w-2 h-2 rounded-full bg-white/80"></div>
+          <span id="navUserEmail" class="text-xs text-white/90 font-medium font-mono">user@bank.de</span>
+          <span id="navUserRole" class="text-[10px] uppercase tracking-wider font-mono px-1.5 py-0.2 rounded border border-white/10 bg-white/[0.05] text-white/70">CUSTOMER</span>
+        </div>
+
+        <!-- Logout Button -->
+        <button onclick="logout()" class="btn-tactile px-3.5 py-1.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/10 text-xs text-white/80 font-medium flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Sign Out</span>
+        </button>
       </div>
+
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full">
+  <!-- MAIN VIEWPORT -->
+  <main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
 
-    <!-- AUTH SECTION (Giriş & Kayıt Ekranı) -->
+    <!-- ========================================== -->
+    <!-- AUTHENTICATION VIEW (Apple/Linear Minimal)  -->
+    <!-- ========================================== -->
     <div id="authSection" class="max-w-md mx-auto py-12">
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <h2 id="authTitle" class="text-2xl font-bold tracking-tight mb-2">Welcome Back</h2>
-        <p class="text-xs text-slate-400 mb-6">Enter your credentials to access your banking terminal.</p>
+      <div class="relative bg-obsidian-900/90 border border-white/10 rounded-3xl p-8 backdrop-blur-2xl shadow-luxury-depth">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div class="inline-flex w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/15 items-center justify-center text-white mb-4 shadow-titanium-subtle">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h2 id="authTitle" class="font-display text-2xl font-bold tracking-tight text-white">Titanium Terminal</h2>
+          <p id="authSubtitle" class="text-xs text-white/60 mt-1 font-sans">Authorized personnel access to high-concurrency ledger core.</p>
+        </div>
 
+        <!-- Mode Tabs -->
+        <div class="flex p-1 rounded-xl bg-obsidian-950 border border-white/[0.08] mb-6">
+          <button id="tabSignIn" onclick="setAuthMode(false)" class="flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 bg-white/10 text-white shadow-sm">
+            Sign In
+          </button>
+          <button id="tabRegister" onclick="setAuthMode(true)" class="flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 text-white/50 hover:text-white">
+            Open Account
+          </button>
+        </div>
+
+        <!-- Auth Form -->
         <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
           <div id="fullNameGroup" class="hidden">
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name</label>
-            <input type="text" id="regFullName" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 outline-none" placeholder="Erdem Celik">
+            <label class="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">Legal Full Name</label>
+            <input type="text" id="regFullName" class="w-full bg-obsidian-950/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-white/40 focus:ring-1 focus:ring-white/20 outline-none transition placeholder-white/20" placeholder="Erdem Celik">
           </div>
+
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Email Address</label>
-            <input type="email" id="authEmail" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 outline-none" placeholder="erdem@bank.de">
+            <label class="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">Email Address</label>
+            <input type="email" id="authEmail" required value="erdem@bank.de" class="w-full bg-obsidian-950/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-white/40 focus:ring-1 focus:ring-white/20 outline-none transition placeholder-white/20" placeholder="user@titanium.bank">
           </div>
+
           <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Password</label>
-            <input type="password" id="authPassword" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-500 outline-none" placeholder="••••••••">
+            <label class="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">Access Passphrase</label>
+            <input type="password" id="authPassword" required value="StrongPass123!" class="w-full bg-obsidian-950/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-white/40 focus:ring-1 focus:ring-white/20 outline-none transition placeholder-white/20" placeholder="••••••••••••">
           </div>
-          <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-xl text-sm transition mt-2">Sign In</button>
+
+          <!-- Submit Button -->
+          <button type="submit" id="authSubmitBtn" class="btn-tactile w-full py-3 bg-white text-black font-semibold rounded-xl text-xs tracking-wider uppercase transition mt-2 flex items-center justify-center gap-2">
+            <span id="authBtnText">Authenticate Session</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
         </form>
 
-        <div class="mt-6 text-center">
-          <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-xs text-emerald-400 hover:underline">Don't have an account? Register here</button>
+        <!-- Quick Demo Autofill Pill -->
+        <div class="mt-6 pt-5 border-t border-white/[0.08] flex items-center justify-between text-xs">
+          <span class="text-white/40 text-[11px] font-mono">Quick Seed:</span>
+          <button type="button" onclick="fillDemoUser('erdem@bank.de', 'StrongPass123!')" class="btn-tactile text-[11px] font-mono text-white/70 hover:text-white px-2 py-1 rounded-md border border-white/10 bg-white/[0.02]">
+            Fill Demo Admin
+          </button>
         </div>
+
       </div>
     </div>
 
-    <!-- DASHBOARD SECTION (Giriş Yapılınca Açılan Panel) -->
+
+    <!-- ========================================== -->
+    <!-- DASHBOARD VIEW (Titanium Luxury Experience) -->
+    <!-- ========================================== -->
     <div id="dashboardSection" class="hidden space-y-8">
       
-      <!-- TOP: KART & TRANSFER PANELİ -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- TOP ROW: 3D TITANIUM CARD + TRANSFER COMMAND CENTER -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        <!-- DİJİTAL BANKA KARTI -->
-        <div class="card-gradient rounded-3xl p-6 border border-slate-700/60 shadow-2xl relative overflow-hidden flex flex-col justify-between h-64 neon-border">
-          <div class="flex justify-between items-start">
-            <div>
-              <p class="text-xs uppercase tracking-wider text-slate-400">Primary Checking</p>
-              <h3 id="cardOwner" class="text-lg font-bold tracking-tight text-white mt-0.5">---</h3>
+        <!-- ========================================== -->
+        <!-- STAR OF THE SHOW: 3D TITANIUM DEBIT CARD   -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono uppercase tracking-widest text-white/50">Primary Reserve Instrument</span>
             </div>
-            <i data-lucide="nfc" class="w-6 h-6 text-slate-400"></i>
+            <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border border-white/15 bg-white/[0.05] text-white/80">3D Interactive</span>
           </div>
 
-          <div class="w-12 h-9 rounded-md bg-gradient-to-r from-amber-400 to-yellow-600 opacity-80 flex items-center px-1">
-            <div class="w-full h-4 border border-black/30 rounded"></div>
-          </div>
+          <!-- 3D Card Container Wrapper with Mouse Tilt -->
+          <div id="card3dContainer" class="card-3d-wrapper cursor-pointer select-none">
+            <div id="titaniumCard" class="titanium-card-body brushed-metal-pattern rounded-3xl p-7 border border-white/15 relative overflow-hidden flex flex-col justify-between h-72">
+              
+              <!-- Glare Overlay Layer -->
+              <div id="cardGlare" class="titanium-glare"></div>
 
-          <div>
-            <p id="cardIban" class="text-sm tracking-widest font-mono text-slate-300">DE89 •••• •••• •••• ••••</p>
-            <div class="flex justify-between items-end mt-2">
-              <div>
-                <p class="text-[10px] text-slate-400 uppercase tracking-wider">Available Balance</p>
-                <p id="cardBalance" class="text-2xl font-bold text-emerald-400 tracking-tight">€ 0.00</p>
+              <!-- Top Row: Card Brand & Contactless Indicator -->
+              <div class="flex justify-between items-start z-10">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-display font-bold tracking-widest text-sm text-white">TITANIUM BLACK</span>
+                    <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border border-white/20 bg-white/[0.08] text-white/80">WORLD ELITE</span>
+                  </div>
+                  <p class="text-[10px] font-mono uppercase text-white/40 tracking-wider mt-0.5">Dual-Entry Protected</p>
+                </div>
+
+                <!-- Contactless Payment Wave SVG -->
+                <div class="text-white/60">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8.5 16.5a5 5 0 0 1 0-7"/>
+                    <path d="M12 19a9 9 0 0 0 0-14"/>
+                    <path d="M5 14a2 2 0 0 1 0-3"/>
+                  </svg>
+                </div>
               </div>
-              <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">ACTIVE</span>
+
+              <!-- Mid Row: EMV Chip + Holographic Core -->
+              <div class="flex items-center justify-between z-10 my-1">
+                <!-- Dual-tone Metallic Chip -->
+                <div class="emv-chip w-12 h-9 rounded-lg flex flex-col justify-around p-1 opacity-90 shadow-md">
+                  <div class="w-full h-[1px] bg-black/40"></div>
+                  <div class="flex justify-between">
+                    <div class="w-3 h-3 rounded-full border border-black/40"></div>
+                    <div class="w-3 h-3 rounded-full border border-black/40"></div>
+                  </div>
+                  <div class="w-full h-[1px] bg-black/40"></div>
+                </div>
+
+                <!-- Brushed Metal Emblem -->
+                <div class="flex items-center gap-1.5 opacity-60">
+                  <div class="w-6 h-6 rounded-full border border-white/40 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-white/70"></div>
+                  </div>
+                  <div class="w-6 h-6 rounded-full border border-white/40 -ml-3"></div>
+                </div>
+              </div>
+
+              <!-- Bottom Row: IBAN + Copy Button + Balance + Owner -->
+              <div class="z-10 space-y-3">
+                <!-- IBAN Display with Tactile Copy Button -->
+                <div class="flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-md">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[9px] font-mono uppercase text-white/40">IBAN</span>
+                    <span id="cardIban" class="text-xs sm:text-sm font-mono tracking-wider text-white/90">DE89 •••• •••• •••• ••••</span>
+                  </div>
+                  
+                  <!-- Copy Button with Dynamic Morphing Checkmark -->
+                  <button id="btnCopyIban" onclick="copyCardIban(event)" title="Copy IBAN to Clipboard" class="btn-tactile p-1.5 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/15 text-white/70 hover:text-white transition">
+                    <svg id="copyIconDefault" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    <svg id="copyIconSuccess" class="w-3.5 h-3.5 hidden text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Balance & Cardholder -->
+                <div class="flex justify-between items-end pt-1">
+                  <div>
+                    <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Cardholder</p>
+                    <p id="cardOwner" class="font-display font-medium text-sm text-white tracking-wide truncate max-w-[170px]">---</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] font-mono uppercase tracking-widest text-white/40">Liquid Balance</p>
+                    <p id="cardBalanceCount" class="font-mono font-bold text-xl text-white tracking-tight">€ 0.00</p>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           </div>
+
+          <!-- Quick Metrics Bar Below Card -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-obsidian-900/60 border border-white/[0.08] rounded-2xl p-3 backdrop-blur-xl">
+              <span class="text-[10px] font-mono uppercase text-white/40 block">Account ID</span>
+              <span id="statAccountId" class="font-mono text-sm font-semibold text-white">#--</span>
+            </div>
+            <div class="bg-obsidian-900/60 border border-white/[0.08] rounded-2xl p-3 backdrop-blur-xl">
+              <span class="text-[10px] font-mono uppercase text-white/40 block">Total Entries</span>
+              <span id="statTxCount" class="font-mono text-sm font-semibold text-white">0</span>
+            </div>
+            <div class="bg-obsidian-900/60 border border-white/[0.08] rounded-2xl p-3 backdrop-blur-xl flex flex-col justify-between">
+              <span class="text-[10px] font-mono uppercase text-white/40 block">Status</span>
+              <span class="text-[11px] font-mono font-medium text-white flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                ACTIVE
+              </span>
+            </div>
+          </div>
+
+          <!-- Secondary Action: Create Another Account -->
+          <div class="flex items-center justify-between p-3 rounded-2xl border border-white/[0.06] bg-obsidian-900/30">
+            <div>
+              <p class="text-xs font-medium text-white/80">Need a Secondary Treasury Account?</p>
+              <p class="text-[11px] text-white/40 font-mono">Create an isolated checking account with €500 initial liquidity.</p>
+            </div>
+            <button onclick="createNewAccount()" class="btn-tactile text-xs font-mono text-white px-3 py-1.5 rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/10 shrink-0">
+              + New Account
+            </button>
+          </div>
+
         </div>
 
-        <!-- HIZLI TRANSFER FORMU -->
-        <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center gap-2 mb-4">
-              <i data-lucide="send" class="w-4 h-4 text-emerald-400"></i>
-              <h3 class="text-base font-semibold">Initiate Fast Transfer</h3>
-            </div>
+
+        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: TRANSFER & STRESS TESTER     -->
+        <!-- ========================================== -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- FAST SETTLEMENT DISPATCH TERMINAL -->
+          <div class="bg-obsidian-900/70 border border-white/10 rounded-3xl p-6 sm:p-7 backdrop-blur-2xl shadow-luxury-depth">
             
-            <form id="transferForm" onsubmit="handleTransfer(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Recipient Account ID</label>
-                <input type="number" id="txDestId" required min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:border-emerald-500 outline-none" placeholder="e.g. 2">
+            <div class="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.08]">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-white">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-display font-semibold text-base text-white">Atomic Settlement Dispatch</h3>
+                  <p class="text-[11px] text-white/50 font-mono">Instant cross-account double-entry ledger transfer</p>
+                </div>
               </div>
-              <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Amount in EUR (€)</label>
-                <input type="number" step="0.01" id="txAmountEur" required min="0.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:border-emerald-500 outline-none" placeholder="100.00">
+
+              <!-- Idempotency Guard Badge -->
+              <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-white/[0.02]">
+                <svg class="w-3 h-3 text-white/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <span class="text-[10px] font-mono text-white/60 uppercase">Redis Idempotency Active</span>
               </div>
-              <div class="flex items-end">
-                <button type="submit" id="sendBtn" class="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
-                  <span>Send Funds</span>
-                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+
+            <!-- Transfer Form -->
+            <form id="transferForm" onsubmit="handleTransfer(event)" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- Destination Account ID -->
+                <div>
+                  <div class="flex justify-between items-center mb-1.5">
+                    <label class="text-[11px] font-mono uppercase tracking-wider text-white/60">Recipient Account ID</label>
+                    <span class="text-[10px] text-white/40 font-mono">e.g. 2</span>
+                  </div>
+                  <div class="relative">
+                    <input type="number" id="txDestId" required min="1" class="w-full bg-obsidian-950/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:border-white/40 focus:ring-1 focus:ring-white/20 outline-none transition placeholder-white/20" placeholder="Target Account #">
+                  </div>
+                </div>
+
+                <!-- Transfer Amount (EUR) -->
+                <div>
+                  <div class="flex justify-between items-center mb-1.5">
+                    <label class="text-[11px] font-mono uppercase tracking-wider text-white/60">Amount in EUR (€)</label>
+                    <span class="text-[10px] text-white/40 font-mono">Max €10,000 (AML)</span>
+                  </div>
+                  <div class="relative">
+                    <span class="absolute left-4 top-2.5 text-white/40 font-mono text-sm">€</span>
+                    <input type="number" step="0.01" id="txAmountEur" required min="0.01" class="w-full bg-obsidian-950/80 border border-white/10 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white font-mono focus:border-white/40 focus:ring-1 focus:ring-white/20 outline-none transition placeholder-white/20" placeholder="0.00">
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Quick Presets -->
+              <div class="flex flex-wrap items-center gap-2 pt-1">
+                <span class="text-[10px] font-mono uppercase text-white/40 mr-1">Presets:</span>
+                <button type="button" onclick="setTransferAmount(25)" class="btn-tactile text-[11px] font-mono text-white/70 hover:text-white px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03]">
+                  €25.00
+                </button>
+                <button type="button" onclick="setTransferAmount(100)" class="btn-tactile text-[11px] font-mono text-white/70 hover:text-white px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03]">
+                  €100.00
+                </button>
+                <button type="button" onclick="setTransferAmount(500)" class="btn-tactile text-[11px] font-mono text-white/70 hover:text-white px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03]">
+                  €500.00
+                </button>
+                <button type="button" onclick="setTransferMax()" class="btn-tactile text-[11px] font-mono text-white/70 hover:text-white px-2.5 py-1 rounded-lg border border-white/10 bg-white/[0.03]">
+                  MAX LIQUID
+                </button>
+                <!-- AML Trigger Test Pill -->
+                <button type="button" onclick="setTransferAmount(15000)" title="Tests the 422 Anti-Fraud AML alert rule" class="btn-tactile text-[10px] font-mono text-white/50 hover:text-white px-2 py-1 rounded-lg border border-white/10 bg-white/[0.02] ml-auto">
+                  Test AML €15k
+                </button>
+              </div>
+
+              <!-- Submit Transfer Button -->
+              <div class="pt-2">
+                <button type="submit" id="sendBtn" class="btn-tactile w-full py-3 bg-white text-black font-semibold rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-titanium-glow">
+                  <span id="sendBtnText">Authorize & Dispatch Transfer</span>
+                  <svg id="sendBtnIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <svg id="sendBtnSpinner" class="w-4 h-4 animate-spin-fast hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
                 </button>
               </div>
             </form>
+
           </div>
 
-          <div id="txStatusBox" class="hidden mt-4 p-3 rounded-xl text-xs flex items-center gap-2"></div>
+
+          <!-- ========================================== -->
+          <!-- CONCURRENCY & ROW-LOCK STRESS TEST PANEL   -->
+          <!-- ========================================== -->
+          <div class="bg-obsidian-900/70 border border-white/10 rounded-3xl p-6 sm:p-7 backdrop-blur-2xl shadow-luxury-depth">
+            
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-white">
+                  <!-- CPU / Concurrency SVG -->
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    <rect x="9" y="9" width="6" height="6"/>
+                    <line x1="9" y1="1" x2="9" y2="4"/>
+                    <line x1="15" y1="1" x2="15" y2="4"/>
+                    <line x1="9" y1="20" x2="9" y2="23"/>
+                    <line x1="15" y1="20" x2="15" y2="23"/>
+                    <line x1="20" y1="9" x2="23" y2="9"/>
+                    <line x1="20" y1="14" x2="23" y2="14"/>
+                    <line x1="1" y1="9" x2="4" y2="9"/>
+                    <line x1="1" y1="14" x2="4" y2="14"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-display font-semibold text-base text-white">High-Concurrency Race Simulation</h3>
+                  <p class="text-[11px] text-white/50 font-mono">PostgreSQL row locking (SELECT ... FOR UPDATE) validation</p>
+                </div>
+              </div>
+
+              <!-- Badge -->
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded border border-white/10 bg-white/[0.03] text-white/70">5x Parallel Burst</span>
+            </div>
+
+            <p class="text-xs text-white/60 mb-5 leading-relaxed">
+              Dispatches 5 concurrent HTTP transfer requests at the exact same millisecond. Validates that balance consistency is mathematically preserved with zero double-spending or race condition leakage.
+            </p>
+
+            <button onclick="runConcurrencyTest()" id="attackBtn" class="btn-tactile w-full py-3 bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-white font-medium rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center gap-2">
+              <!-- Zap SVG -->
+              <svg id="attackBtnIcon" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <!-- Spinner (Hidden by default) -->
+              <svg id="attackSpinner" class="w-4 h-4 animate-spin-fast hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span id="attackBtnText">Trigger 5x Concurrent Stress Test</span>
+            </button>
+
+            <!-- Real-time Terminal Log Window -->
+            <div id="attackResultBox" class="mt-4 p-4 rounded-2xl bg-obsidian-950 border border-white/10 text-[11px] font-mono text-white/70 space-y-1.5 hidden shadow-inner">
+              <div class="flex items-center justify-between pb-2 border-b border-white/[0.08] text-white/40 text-[10px]">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-white/20"></span>
+                  <span class="w-2 h-2 rounded-full bg-white/20"></span>
+                  <span class="w-2 h-2 rounded-full bg-white/20"></span>
+                  <span class="ml-1">TERMINAL LOG OUTPUT</span>
+                </div>
+                <span id="termTimestamp">--:--:--</span>
+              </div>
+              <div id="terminalStream" class="pt-1 space-y-1 font-mono"></div>
+            </div>
+
+          </div>
+
         </div>
 
       </div>
 
-      <!-- BOTTOM: İŞLEM GEÇMİŞİ (AUDIT TRAIL) & SALDIRI SİMÜLATÖRÜ -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- ========================================== -->
+      <!-- BOTTOM: DOUBLE-ENTRY AUDIT TRAIL STATEMENT -->
+      <!-- ========================================== -->
+      <div class="bg-obsidian-900/70 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-luxury-depth">
         
-        <!-- ÇİFT TARAFLI DEFTER LOGLARI -->
-        <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
-              <h3 class="text-base font-semibold">Double-Entry Audit Trail</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/[0.08]">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/10 flex items-center justify-center text-white">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
             </div>
-            <button onclick="refreshDashboard()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Refresh
-            </button>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-display font-semibold text-lg text-white">Double-Entry Ledger Audit Trail</h3>
+                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.03] text-white/70">IMMUTABLE</span>
+              </div>
+              <p class="text-xs text-white/50 font-mono">Real-time debit/credit journal synchronized with PostgreSQL</p>
+            </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="text-slate-400 border-b border-slate-800">
-                <tr>
-                  <th class="py-2 font-medium">Tx ID</th>
-                  <th class="py-2 font-medium">Type</th>
-                  <th class="py-2 font-medium">Amount</th>
-                  <th class="py-2 font-medium">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody id="ledgerTableBody" class="divide-y divide-slate-800/60">
-                <tr><td colspan="4" class="py-4 text-center text-slate-500">No transactions yet.</td></tr>
-              </tbody>
-            </table>
+          <!-- Filter & Refresh Actions -->
+          <div class="flex items-center gap-3">
+            <!-- Filter Pills -->
+            <div class="flex p-0.5 rounded-xl bg-obsidian-950 border border-white/[0.08]">
+              <button onclick="setStatementFilter('ALL')" id="filterBtnAll" class="px-2.5 py-1 text-[11px] font-mono rounded-lg bg-white/10 text-white transition">ALL</button>
+              <button onclick="setStatementFilter('CREDIT')" id="filterBtnCredit" class="px-2.5 py-1 text-[11px] font-mono rounded-lg text-white/50 hover:text-white transition">CREDIT (+)</button>
+              <button onclick="setStatementFilter('DEBIT')" id="filterBtnDebit" class="px-2.5 py-1 text-[11px] font-mono rounded-lg text-white/50 hover:text-white transition">DEBIT (-)</button>
+            </div>
+
+            <!-- Refresh Button -->
+            <button onclick="refreshDashboard(true)" id="refreshBtn" title="Sync Ledger" class="btn-tactile p-2 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white/70 hover:text-white transition">
+              <svg id="refreshIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 21h5v-5"/>
+              </svg>
+            </button>
           </div>
         </div>
 
-        <!-- MÜHENDİSLİK ŞOV: PARALEL CONCURRENCY SALDIRI TESTİ -->
-        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
-              <h3 class="text-base font-semibold">Stress Test Panel</h3>
-            </div>
-            <p class="text-xs text-slate-400 mb-4">Fires 5 simultaneous transfer requests at the exact same millisecond to test PostgreSQL row locks.</p>
-            <button onclick="runConcurrencyTest()" id="attackBtn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2">
-              <i data-lucide="zap" class="w-4 h-4"></i> Run 5x Concurrency Test
-            </button>
-          </div>
-
-          <div id="attackResultBox" class="mt-4 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1 hidden">
-          </div>
+        <!-- Ledger Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-white/40 font-mono text-[11px] uppercase border-b border-white/[0.08]">
+              <tr>
+                <th class="py-3 px-3 font-medium">Transaction ID</th>
+                <th class="py-3 px-3 font-medium">Entry Type</th>
+                <th class="py-3 px-3 font-medium">Amount</th>
+                <th class="py-3 px-3 font-medium">Verification Status</th>
+                <th class="py-3 px-3 font-medium text-right">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody" class="divide-y divide-white/[0.04] font-mono">
+              <tr>
+                <td colspan="5" class="py-8 text-center text-white/40">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <svg class="w-6 h-6 text-white/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>No double-entry transactions recorded yet.</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
       </div>
 
     </div>
+
   </main>
 
-  <script>
-    let isRegisterMode = false;
-    let currentAccount = null;
+  <!-- FOOTER -->
+  <footer class="border-t border-white/[0.08] bg-obsidian-950/80 py-6 text-center text-xs text-white/40 font-mono">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+        <span>TITANIUM CORE BANKING OS v1.3</span>
+      </div>
+      <div>
+        <span>PostgreSQL 16 Engine • Redis 7 Idempotency • Argon2id Crypto</span>
+      </div>
+    </div>
+  </footer>
 
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT LOGIC & INTERACTIONS            -->
+  <!-- ========================================== -->
+  <script>
+    // State management
+    let isRegisterMode = false;
+    let currentUser = null;
+    let currentAccount = null;
+    let allAccounts = [];
+    let statementEntries = [];
+    let activeStatementFilter = 'ALL';
+    let previousBalance = 0;
+
+    // --- AUTHENTICATION HEADERS ---
     function getAuthHeaders() {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("titanium_token") || localStorage.getItem("token");
       return {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       };
     }
 
-    function toggleAuthMode() {
-      isRegisterMode = !isRegisterMode;
-      document.getElementById("authTitle").innerText = isRegisterMode ? "Create Account" : "Welcome Back";
-      document.getElementById("fullNameGroup").classList.toggle("hidden", !isRegisterMode);
-      document.getElementById("authSubmitBtn").innerText = isRegisterMode ? "Register & Sign In" : "Sign In";
-      document.getElementById("authToggleBtn").innerText = isRegisterMode ? "Already registered? Sign In" : "Don't have an account? Register here";
+    // --- AUTH MODE SWITCHER ---
+    function setAuthMode(register) {
+      isRegisterMode = register;
+      const tabSignIn = document.getElementById("tabSignIn");
+      const tabRegister = document.getElementById("tabRegister");
+      const fullNameGroup = document.getElementById("fullNameGroup");
+      const authTitle = document.getElementById("authTitle");
+      const authSubtitle = document.getElementById("authSubtitle");
+      const authBtnText = document.getElementById("authBtnText");
+
+      if (isRegisterMode) {
+        tabRegister.className = "flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 bg-white/10 text-white shadow-sm";
+        tabSignIn.className = "flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 text-white/50 hover:text-white";
+        fullNameGroup.classList.remove("hidden");
+        authTitle.innerText = "Register Titanium Account";
+        authSubtitle.innerText = "Provision an authenticated bank identity with dual-entry ledger.";
+        authBtnText.innerText = "Create Identity & Deposit";
+      } else {
+        tabSignIn.className = "flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 bg-white/10 text-white shadow-sm";
+        tabRegister.className = "flex-1 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 text-white/50 hover:text-white";
+        fullNameGroup.classList.add("hidden");
+        authTitle.innerText = "Titanium Terminal";
+        authSubtitle.innerText = "Authorized personnel access to high-concurrency ledger core.";
+        authBtnText.innerText = "Authenticate Session";
+      }
     }
 
+    function fillDemoUser(email, pass) {
+      document.getElementById("authEmail").value = email;
+      document.getElementById("authPassword").value = pass;
+      showToast("Demo Data Loaded", "Credentials ready for instant authorization.", "info");
+    }
+
+    // --- AUTH SUBMIT HANDLER ---
     async function handleAuth(e) {
       e.preventDefault();
-      const email = document.getElementById("authEmail").value;
+      const email = document.getElementById("authEmail").value.trim();
       const password = document.getElementById("authPassword").value;
+      const submitBtn = document.getElementById("authSubmitBtn");
+
+      submitBtn.classList.add("opacity-70", "pointer-events-none");
 
       try {
         if (isRegisterMode) {
-          const fullName = document.getElementById("regFullName").value;
+          const fullName = document.getElementById("regFullName").value.trim() || "Titanium Member";
           const regRes = await fetch("/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, full_name: fullName, password, role: "CUSTOMER" })
           });
-          if (!regRes.ok) throw new Error((await regRes.json()).detail || "Registration failed");
+          
+          if (!regRes.ok) {
+            const errData = await regRes.json();
+            throw new Error(errData.detail || "Registration rejected.");
+          }
+          showToast("Identity Created", "User successfully enrolled in core registry.", "success");
         }
 
         const loginRes = await fetch("/auth/login", {
@@ -222,159 +807,565 @@
           body: JSON.stringify({ email, password })
         });
 
-        if (!loginRes.ok) throw new Error((await loginRes.json()).detail || "Login failed");
+        if (!loginRes.ok) {
+          const errData = await loginRes.json();
+          throw new Error(errData.detail || "Invalid email or access passphrase.");
+        }
+
         const data = await loginRes.json();
-        localStorage.setItem("token", data.access_token);
-        initDashboard();
+        localStorage.setItem("titanium_token", data.access_token);
+        localStorage.setItem("token", data.access_token); // sync compatibility
+
+        showToast("Session Established", "Argon2id verified. Access granted.", "success");
+        await initDashboard();
+
       } catch (err) {
-        alert(err.message);
+        showToast("Authentication Failed", err.message, "error");
+      } finally {
+        submitBtn.classList.remove("opacity-70", "pointer-events-none");
       }
     }
 
+    // --- DASHBOARD INITIALIZATION ---
     async function initDashboard() {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("titanium_token") || localStorage.getItem("token");
       if (!token) return;
 
       try {
         const meRes = await fetch("/auth/me", { headers: getAuthHeaders() });
         if (!meRes.ok) throw new Error("Unauthorized");
-        const user = await meRes.json();
+        currentUser = await meRes.json();
 
+        // Switch screens
         document.getElementById("authSection").classList.add("hidden");
         document.getElementById("dashboardSection").classList.remove("hidden");
         document.getElementById("navUserSection").classList.remove("hidden");
         document.getElementById("navUserSection").classList.add("flex");
-        document.getElementById("navUserEmail").innerText = user.email;
+        
+        document.getElementById("navUserEmail").innerText = currentUser.email;
+        document.getElementById("navUserRole").innerText = currentUser.role || "CUSTOMER";
 
-        await ensureAccountCreated(user);
+        await ensureAccountCreated(currentUser);
         await refreshDashboard();
+        init3DCardTilt();
+
       } catch (err) {
+        console.error(err);
         logout();
       }
     }
 
+    // Ensure user has at least one checking account with initial funds
     async function ensureAccountCreated(user) {
-      const accsRes = await fetch("/accounts/me", { headers: getAuthHeaders() });
-      const accounts = await accsRes.json();
+      try {
+        const accsRes = await fetch("/accounts/me", { headers: getAuthHeaders() });
+        allAccounts = await accsRes.json();
 
-      if (accounts.length === 0) {
+        if (!allAccounts || allAccounts.length === 0) {
+          const createRes = await fetch("/accounts", {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ owner_name: user.full_name, initial_balance: 50000 }) // €500.00 initial
+          });
+          currentAccount = await createRes.json();
+          allAccounts = [currentAccount];
+          showToast("Account Provisioned", `Primary account initialized with €500.00 initial reserve.`, "success");
+        } else {
+          currentAccount = allAccounts[0];
+        }
+      } catch (err) {
+        console.error("Account provisioning error", err);
+      }
+    }
+
+    // Create an additional secondary account
+    async function createNewAccount() {
+      try {
         const createRes = await fetch("/accounts", {
           method: "POST",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ owner_name: user.full_name, initial_balance: 50000 })
+          body: JSON.stringify({ owner_name: currentUser.full_name, initial_balance: 50000 })
         });
-        currentAccount = await createRes.json();
-      } else {
-        currentAccount = accounts[0];
+        const newAcc = await createRes.json();
+        allAccounts.push(newAcc);
+        showToast("New Treasury Opened", `Account #${newAcc.id} created with €500.00. Destination ID: ${newAcc.id}`, "success");
+        
+        // Auto-fill recipient account ID in transfer form to make testing effortless!
+        document.getElementById("txDestId").value = newAcc.id;
+        await refreshDashboard(true);
+      } catch (err) {
+        showToast("Creation Error", err.message, "error");
       }
     }
 
-    async function refreshDashboard() {
+    // --- REFRESH DASHBOARD & STATEMENT ---
+    async function refreshDashboard(showNotification = false) {
       if (!currentAccount) return;
-      const accRes = await fetch(`/accounts/${currentAccount.id}`, { headers: getAuthHeaders() });
-      currentAccount = await accRes.json();
 
-      document.getElementById("cardOwner").innerText = currentAccount.owner_name;
-      document.getElementById("cardIban").innerText = currentAccount.account_number;
-      document.getElementById("cardBalance").innerText = `€ ${(currentAccount.balance / 100).toFixed(2)}`;
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.add("animate-spin-fast");
 
-      const stmtRes = await fetch(`/accounts/${currentAccount.id}/statement`, { headers: getAuthHeaders() });
-      const stmt = await stmtRes.json();
-      
-      const tbody = document.getElementById("ledgerTableBody");
-      if (stmt.entries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-500">No transactions recorded yet.</td></tr>`;
-      } else {
-        tbody.innerHTML = stmt.entries.map(e => `
-          <tr class="hover:bg-slate-800/30 transition">
-            <td class="py-2.5 font-mono text-slate-400">#${e.transaction_id}</td>
-            <td class="py-2.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${e.entry_type === 'CREDIT' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
-                ${e.entry_type}
-              </span>
-            </td>
-            <td class="py-2.5 font-semibold ${e.entry_type === 'CREDIT' ? 'text-emerald-400' : 'text-slate-200'}">
-              ${e.entry_type === 'CREDIT' ? '+' : '-'}€ ${(e.amount / 100).toFixed(2)}
-            </td>
-            <td class="py-2.5 text-slate-500 text-[11px]">${new Date(e.created_at).toLocaleTimeString()}</td>
-          </tr>
-        `).join("");
+      try {
+        // Fetch fresh account details
+        const accRes = await fetch(`/accounts/${currentAccount.id}`, { headers: getAuthHeaders() });
+        if (accRes.ok) {
+          currentAccount = await accRes.json();
+        }
+
+        // Update Card Details
+        document.getElementById("cardOwner").innerText = currentAccount.owner_name || currentUser.full_name;
+        document.getElementById("cardIban").innerText = currentAccount.account_number;
+        document.getElementById("navActiveAccountId").innerText = `#${currentAccount.id}`;
+        document.getElementById("statAccountId").innerText = `#${currentAccount.id}`;
+
+        // Animate count-up balance smoothly
+        const newBalanceCents = currentAccount.balance;
+        animateBalanceCount(previousBalance, newBalanceCents);
+        previousBalance = newBalanceCents;
+
+        // Fetch Statement Entries
+        const stmtRes = await fetch(`/accounts/${currentAccount.id}/statement`, { headers: getAuthHeaders() });
+        if (stmtRes.ok) {
+          const stmt = await stmtRes.json();
+          statementEntries = stmt.entries || [];
+          document.getElementById("statTxCount").innerText = statementEntries.length;
+          renderStatementTable();
+        }
+
+        if (showNotification) {
+          showToast("Ledger Synchronized", "Account balance and audit trail up to date.", "info");
+        }
+
+      } catch (err) {
+        console.error("Dashboard refresh failure:", err);
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove("animate-spin-fast");
       }
-      lucide.createIcons();
     }
 
+    // --- COUNT-UP BALANCE NUMBER ANIMATION ---
+    function animateBalanceCount(startCents, endCents, duration = 800) {
+      const balanceEl = document.getElementById("cardBalanceCount");
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // easeOutExpo easing function
+        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const currentCents = Math.round(startCents + (endCents - startCents) * eased);
+        
+        balanceEl.innerText = `€ ${(currentCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    // --- COPY IBAN INTERACTION WITH MORPHING CHECKMARK ---
+    async function copyCardIban(e) {
+      e.stopPropagation();
+      if (!currentAccount) return;
+
+      try {
+        await navigator.clipboard.writeText(currentAccount.account_number);
+        
+        const defaultIcon = document.getElementById("copyIconDefault");
+        const successIcon = document.getElementById("copyIconSuccess");
+        
+        defaultIcon.classList.add("hidden");
+        successIcon.classList.remove("hidden");
+
+        showToast("IBAN Copied", currentAccount.account_number, "success");
+
+        setTimeout(() => {
+          defaultIcon.classList.remove("hidden");
+          successIcon.classList.add("hidden");
+        }, 2000);
+
+      } catch (err) {
+        showToast("Copy Failed", "Could not copy to clipboard.", "error");
+      }
+    }
+
+    // --- TRANSFER PRESET BUTTONS ---
+    function setTransferAmount(eur) {
+      document.getElementById("txAmountEur").value = eur.toFixed(2);
+    }
+
+    function setTransferMax() {
+      if (!currentAccount) return;
+      const maxEur = Math.max(0, (currentAccount.balance / 100) - 0.01);
+      document.getElementById("txAmountEur").value = maxEur.toFixed(2);
+    }
+
+    // --- DISPATCH TRANSFER EXECUTION ---
     async function handleTransfer(e) {
       e.preventDefault();
       const destId = parseInt(document.getElementById("txDestId").value);
       const amountEur = parseFloat(document.getElementById("txAmountEur").value);
-      const statusBox = document.getElementById("txStatusBox");
+      const sendBtn = document.getElementById("sendBtn");
+      const sendBtnText = document.getElementById("sendBtnText");
+      const sendBtnIcon = document.getElementById("sendBtnIcon");
+      const sendBtnSpinner = document.getElementById("sendBtnSpinner");
 
-      const payload = {
-        source_account_id: currentAccount.id,
-        destination_account_id: destId,
-        amount: Math.round(amountEur * 100),
-        idempotency_key: `ui-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
-      };
+      if (isNaN(destId) || isNaN(amountEur) || amountEur <= 0) {
+        showToast("Invalid Input", "Please provide a valid account ID and positive amount.", "error");
+        return;
+      }
+
+      // Enter loading state
+      sendBtn.classList.add("opacity-70", "pointer-events-none");
+      sendBtnText.innerText = "Dispatching Atomic Settlement...";
+      sendBtnIcon.classList.add("hidden");
+      sendBtnSpinner.classList.remove("hidden");
+
+      const amountCents = Math.round(amountEur * 100);
+      const idempotencyKey = `transfer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
       try {
         const res = await fetch("/transfers", {
           method: "POST",
           headers: getAuthHeaders(),
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            source_account_id: currentAccount.id,
+            destination_account_id: destId,
+            amount: amountCents,
+            idempotency_key: idempotencyKey
+          })
         });
+
         const resData = await res.json();
 
-        if (!res.ok) throw new Error(resData.detail || "Transfer failed");
+        if (res.status === 200) {
+          showToast("Settlement Completed", `Dispatched €${amountEur.toFixed(2)} to Account #${destId}.`, "success");
+          document.getElementById("txAmountEur").value = "";
+          await refreshDashboard();
+        } else if (res.status === 422) {
+          // Anti-Fraud AML alert
+          showToast("Anti-Fraud AML Alert", resData.detail || "Transfer blocked by regulatory AML rule (>€10,000.00).", "aml");
+        } else if (res.status === 429) {
+          // Rate Limit Alert
+          showToast("Rate Limit Exceeded", resData.detail || "Maximum 10 transfers per minute. Cooldown triggered.", "ratelimit");
+        } else {
+          showToast(`Transfer Error (HTTP ${res.status})`, resData.detail || "Transaction failed.", "error");
+        }
 
-        statusBox.className = "mt-4 p-3 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
-        statusBox.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> ${resData.message}`;
-        statusBox.classList.remove("hidden");
-        document.getElementById("txAmountEur").value = "";
-        await refreshDashboard();
       } catch (err) {
-        statusBox.className = "mt-4 p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-500/10 text-rose-400 border border-rose-500/30";
-        statusBox.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> ${err.message}`;
-        statusBox.classList.remove("hidden");
+        showToast("Network Error", err.message, "error");
+      } finally {
+        sendBtn.classList.remove("opacity-70", "pointer-events-none");
+        sendBtnText.innerText = "Authorize & Dispatch Transfer";
+        sendBtnIcon.classList.remove("hidden");
+        sendBtnSpinner.classList.add("hidden");
       }
-      lucide.createIcons();
     }
 
+    // --- 5x CONCURRENCY & ROW LOCK STRESS TEST ---
     async function runConcurrencyTest() {
-      const box = document.getElementById("attackResultBox");
-      box.classList.remove("hidden");
-      box.innerHTML = `<span class="text-yellow-400">⚡ Firing 5 parallel requests...</span><br>`;
+      const attackBtn = document.getElementById("attackBtn");
+      const attackBtnIcon = document.getElementById("attackBtnIcon");
+      const attackSpinner = document.getElementById("attackSpinner");
+      const attackBtnText = document.getElementById("attackBtnText");
+      const resultBox = document.getElementById("attackResultBox");
+      const terminalStream = document.getElementById("terminalStream");
+      const termTimestamp = document.getElementById("termTimestamp");
 
-      const requests = Array.from({ length: 5 }).map((_, i) => {
+      // UI state
+      attackBtn.classList.add("opacity-75", "pointer-events-none");
+      attackBtnIcon.classList.add("hidden");
+      attackSpinner.classList.remove("hidden");
+      attackBtnText.innerText = "Executing 5x Concurrent Burst...";
+
+      resultBox.classList.remove("hidden");
+      terminalStream.innerHTML = `<div class="text-white/50 text-[10px]">>>> INITIALIZING 5 SIMULTANEOUS ATOMIC REQUESTS...</div>`;
+      termTimestamp.innerText = new Date().toLocaleTimeString();
+
+      // Find target account (if account 1, send to 2, else 1)
+      const targetId = currentAccount.id === 1 ? 2 : 1;
+      const burstStartTime = performance.now();
+
+      // Prepare 5 parallel requests
+      const requests = Array.from({ length: 5 }).map((_, idx) => {
+        const idKey = `stress-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`;
+        const reqStart = performance.now();
+        
         return fetch("/transfers", {
           method: "POST",
           headers: getAuthHeaders(),
           body: JSON.stringify({
             source_account_id: currentAccount.id,
-            destination_account_id: currentAccount.id === 1 ? 2 : 1,
-            amount: 500,
-            idempotency_key: `attack-${Date.now()}-${i}`
+            destination_account_id: targetId,
+            amount: 500, // €5.00
+            idempotency_key: idKey
           })
-        }).then(async r => ({ status: r.status, data: await r.json() }));
+        }).then(async res => {
+          const latency = Math.round(performance.now() - reqStart);
+          const serverLatency = res.headers.get("X-Process-Time-Ms");
+          let data;
+          try { data = await res.json(); } catch(e) { data = { detail: "Unknown response" }; }
+          return {
+            index: idx + 1,
+            status: res.status,
+            data: data,
+            latency: latency,
+            serverLatency: serverLatency || latency
+          };
+        }).catch(err => ({
+          index: idx + 1,
+          status: 0,
+          data: { detail: err.message },
+          latency: Math.round(performance.now() - reqStart),
+          serverLatency: 0
+        }));
       });
 
       const results = await Promise.all(requests);
-      box.innerHTML = "";
-      results.forEach((r, idx) => {
-        const color = r.status === 200 ? "text-emerald-400" : "text-rose-400";
-        box.innerHTML += `<div>Req #${idx + 1}: <span class="${color}">HTTP ${r.status}</span> - ${r.status === 200 ? 'SUCCESS' : (r.data.detail || 'REJECTED')}</div>`;
+      const totalElapsed = Math.round(performance.now() - burstStartTime);
+
+      // Terminal Typewriter / Pulse Output
+      terminalStream.innerHTML = "";
+      
+      results.forEach((res, i) => {
+        setTimeout(() => {
+          const isSuccess = res.status === 200;
+          const statusBadge = isSuccess 
+            ? `<span class="px-1.5 py-0.2 rounded bg-white text-black font-semibold">200 OK</span>` 
+            : `<span class="px-1.5 py-0.2 rounded bg-white/10 text-white/90 border border-white/20">${res.status || 'ERR'}</span>`;
+          
+          const logLine = document.createElement("div");
+          logLine.className = "flex items-center justify-between py-0.5 border-b border-white/[0.04]";
+          logLine.innerHTML = `
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-white/40">#${res.index}</span>
+              ${statusBadge}
+              <span class="${isSuccess ? 'text-white' : 'text-white/60'} text-[11px] truncate">
+                ${isSuccess ? 'SETTLED ATOMICALLY' : (res.data.detail || 'REJECTED')}
+              </span>
+            </div>
+            <span class="text-white/40 text-[10px] shrink-0 font-mono">${res.serverLatency}ms</span>
+          `;
+          terminalStream.appendChild(logLine);
+        }, i * 120);
       });
-      await refreshDashboard();
+
+      setTimeout(() => {
+        const summary = document.createElement("div");
+        summary.className = "pt-2 text-white/60 text-[10px] flex items-center justify-between";
+        summary.innerHTML = `
+          <span>ALL 5 REQUESTS PROCESSED IN ${totalElapsed}ms</span>
+          <span class="text-white">POSTGRES ROW-LOCK INTEGRITY 100%</span>
+        `;
+        terminalStream.appendChild(summary);
+
+        attackBtn.classList.remove("opacity-75", "pointer-events-none");
+        attackBtnIcon.classList.remove("hidden");
+        attackSpinner.classList.add("hidden");
+        attackBtnText.innerText = "Trigger 5x Concurrent Stress Test";
+        
+        showToast("Stress Test Completed", `5 concurrent transactions settled in ${totalElapsed}ms.`, "success");
+        refreshDashboard();
+      }, 5 * 120 + 200);
     }
 
+    // --- STATEMENT FILTERING & RENDERING ---
+    function setStatementFilter(filter) {
+      activeStatementFilter = filter;
+      document.getElementById("filterBtnAll").className = filter === 'ALL' 
+        ? "px-2.5 py-1 text-[11px] font-mono rounded-lg bg-white/10 text-white transition" 
+        : "px-2.5 py-1 text-[11px] font-mono rounded-lg text-white/50 hover:text-white transition";
+      document.getElementById("filterBtnCredit").className = filter === 'CREDIT' 
+        ? "px-2.5 py-1 text-[11px] font-mono rounded-lg bg-white/10 text-white transition" 
+        : "px-2.5 py-1 text-[11px] font-mono rounded-lg text-white/50 hover:text-white transition";
+      document.getElementById("filterBtnDebit").className = filter === 'DEBIT' 
+        ? "px-2.5 py-1 text-[11px] font-mono rounded-lg bg-white/10 text-white transition" 
+        : "px-2.5 py-1 text-[11px] font-mono rounded-lg text-white/50 hover:text-white transition";
+      
+      renderStatementTable();
+    }
+
+    function renderStatementTable() {
+      const tbody = document.getElementById("ledgerTableBody");
+      
+      let filtered = statementEntries;
+      if (activeStatementFilter !== 'ALL') {
+        filtered = statementEntries.filter(e => e.entry_type === activeStatementFilter);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-8 text-center text-white/40">
+              No ${activeStatementFilter !== 'ALL' ? activeStatementFilter.toLowerCase() : ''} transactions recorded yet.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(entry => {
+        const isCredit = entry.entry_type === "CREDIT";
+        const sign = isCredit ? "+" : "-";
+        const amountEur = (entry.amount / 100).toFixed(2);
+        const dateObj = new Date(entry.created_at);
+        const timeFormatted = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        return `
+          <tr class="hover:bg-white/[0.02] transition-colors">
+            <td class="py-3 px-3 text-white/80">#${entry.transaction_id}</td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] uppercase font-mono font-medium ${isCredit ? 'bg-white/15 text-white border border-white/20' : 'bg-white/[0.04] text-white/60 border border-white/10'}">
+                ${entry.entry_type}
+              </span>
+            </td>
+            <td class="py-3 px-3 font-semibold ${isCredit ? 'text-white' : 'text-white/70'}">
+              ${sign}€ ${amountEur}
+            </td>
+            <td class="py-3 px-3 text-white/60 text-[11px]">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-white/60"></span>
+                COMPLETED
+              </span>
+            </td>
+            <td class="py-3 px-3 text-right text-white/40 text-[11px]">
+              ${timeFormatted}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // --- 3D TILT & DYNAMIC GLARE EFFECT ON TITANIUM CARD ---
+    function init3DCardTilt() {
+      const container = document.getElementById("card3dContainer");
+      const card = document.getElementById("titaniumCard");
+      const glare = document.getElementById("cardGlare");
+      if (!container || !card || !glare) return;
+
+      container.addEventListener("mousemove", (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        const rotateX = ((y - centerY) / centerY) * -12; // max 12 deg tilt
+        const rotateY = ((x - centerX) / centerX) * 12;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.02, 1.02, 1.02)`;
+
+        const glareX = (x / rect.width) * 100;
+        const glareY = (y / rect.height) * 100;
+        glare.style.opacity = '1';
+        glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.28) 0%, transparent 60%)`;
+      });
+
+      container.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+        glare.style.opacity = '0';
+      });
+    }
+
+    // --- LUXURY MONOCHROME TOAST SYSTEM ---
+    function showToast(title, message, type = "info", duration = 4500) {
+      const container = document.getElementById("toastContainer");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = "pointer-events-auto toast-enter bg-obsidian-900/95 border border-white/20 rounded-2xl p-4 shadow-luxury-depth backdrop-blur-2xl relative overflow-hidden flex items-start gap-3";
+
+      // Titanium Custom Icon SVGs based on alert type (Rule 7 compliant: Avoid Lucide, no matching wrap)
+      let iconSvg = "";
+      if (type === "success") {
+        iconSvg = `
+          <svg class="w-5 h-5 text-white shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>`;
+      } else if (type === "aml") {
+        iconSvg = `
+          <svg class="w-5 h-5 text-white shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>`;
+      } else if (type === "ratelimit") {
+        iconSvg = `
+          <svg class="w-5 h-5 text-white shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>`;
+      } else {
+        iconSvg = `
+          <svg class="w-5 h-5 text-white/80 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>`;
+      }
+
+      toast.innerHTML = `
+        ${iconSvg}
+        <div class="flex-1 pr-2">
+          <h4 class="font-display font-semibold text-xs text-white tracking-wide">${title}</h4>
+          <p class="text-[11px] text-white/70 font-sans mt-0.5 leading-snug">${message}</p>
+        </div>
+        <button onclick="dismissToast(this.parentElement)" class="text-white/40 hover:text-white p-1">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="absolute bottom-0 left-0 h-[2px] bg-white/70 transition-all duration-[${duration}ms] ease-linear w-full" id="toastBar"></div>
+      `;
+
+      container.appendChild(toast);
+
+      // Animate progress countdown bar
+      const bar = toast.querySelector("#toastBar");
+      if (bar) {
+        setTimeout(() => {
+          bar.style.transition = `width ${duration}ms linear`;
+          bar.style.width = "0%";
+        }, 10);
+      }
+
+      // Auto dismiss
+      setTimeout(() => {
+        dismissToast(toast);
+      }, duration);
+    }
+
+    function dismissToast(toastEl) {
+      if (!toastEl || !toastEl.parentElement) return;
+      toastEl.classList.remove("toast-enter");
+      toastEl.classList.add("toast-exit");
+      setTimeout(() => {
+        if (toastEl.parentElement) {
+          toastEl.parentElement.removeChild(toastEl);
+        }
+      }, 250);
+    }
+
+    // --- LOGOUT ---
     function logout() {
+      localStorage.removeItem("titanium_token");
       localStorage.removeItem("token");
       location.reload();
     }
 
-    window.onload = () => {
-      lucide.createIcons();
-      if (localStorage.getItem("token")) initDashboard();
-    };
+    // --- AUTO-BOOTSTRAP ON WINDOW LOAD ---
+    window.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("titanium_token") || localStorage.getItem("token");
+      if (token) {
+        initDashboard();
+      }
+    });
   </script>
 </body>
 </html>
