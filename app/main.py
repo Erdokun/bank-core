@@ -1,21 +1,20 @@
 import time
 import uuid
-import secrets
 import logging
 from typing import List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
-
 from app.database import get_db
 from app.redis_client import get_redis
 from app import models, schemas, security, guards
+from app.veyra import register_veyra_routes, generate_iban, issue_otp, consume_otp
 
 # Configure structured-style application logger
 logging.basicConfig(
@@ -57,7 +56,7 @@ async def get_current_user(
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    if not user:
+    if not user or payload.get("ver", 0) != user.token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User no longer exists."
@@ -128,7 +127,8 @@ async def register_user(
 @app.post("/auth/login", response_model=schemas.TokenResponse, tags=["Auth"])
 async def login_user(
     payload: schemas.LoginRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
 ):
     """
     Authenticates user credentials and returns a signed JWT access token.
@@ -143,151 +143,20 @@ async def login_user(
             detail="Invalid email or password."
         )
 
+    if user.settings.get("two_factor"):
+        if not payload.code:
+            await issue_otp(user.email, redis, "login")
+            raise HTTPException(status_code=428, detail="Email verification required. A code has been sent.")
+        await consume_otp(user.email, payload.code, redis, "login")
+
     access_token = security.create_access_token(
+        version=user.token_version,
         user_id=user.id,
         email=user.email,
         role=user.role.value
     )
 
     return schemas.TokenResponse(access_token=access_token)
-
-
-def generate_veyra_otp_email_html(code: str) -> str:
-    formatted_code = " ".join(list(code))
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Veyra Verification Code</title>
-</head>
-<body style="margin: 0; padding: 40px 16px; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; color: #f4f4f5;">
-  <div style="max-width: 460px; margin: 0 auto; background-color: #0c0c0e; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 40px 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
-    <div style="margin-bottom: 32px;">
-      <span style="font-size: 16px; font-weight: 800; letter-spacing: 0.2em; color: #ffffff; text-transform: uppercase;">VEYRA</span>
-    </div>
-    <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 0 0 12px 0; letter-spacing: -0.02em;">
-      Verification Code
-    </h1>
-    <p style="font-size: 13px; line-height: 1.6; color: rgba(255, 255, 255, 0.65); margin: 0 0 28px 0;">
-      Use this single-use authentication key to verify your Veyra account. Never share this code with anyone.
-    </p>
-    <div style="background-color: #000000; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 24px 16px; text-align: center; margin-bottom: 28px;">
-      <span style="font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #ffffff;">
-        {formatted_code}
-      </span>
-    </div>
-    <p style="font-size: 11px; line-height: 1.5; color: rgba(255, 255, 255, 0.4); margin: 0 0 28px 0;">
-      This security key will expire in 5 minutes. If you did not initiate this request, no further action is required.
-    </p>
-    <div style="height: 1px; background-color: rgba(255, 255, 255, 0.08); margin-bottom: 24px;"></div>
-    <div style="font-size: 10px; line-height: 1.6; color: rgba(255, 255, 255, 0.35); text-transform: uppercase; letter-spacing: 0.05em;">
-      Veyra Digital Ledger Systems • Automated Security Notification • Berlin, Germany
-    </div>
-  </div>
-</body>
-</html>"""
-
-
-@app.post("/auth/otp/send", response_model=schemas.OtpSendResponse, tags=["Auth"])
-async def send_otp(
-    payload: schemas.OtpSendRequest,
-    redis: aioredis.Redis = Depends(get_redis)
-):
-    """
-    Generates a cryptographically random 6-digit OTP code, stores it in Redis with a 5-minute TTL,
-    and dispatches a luxury monochrome verification email template.
-    """
-    clean_email = payload.email.strip().lower()
-    code = f"{secrets.randbelow(900000) + 100000}"
-    redis_key = f"veyra:otp:{clean_email}"
-    await redis.set(redis_key, code, ex=300)
-
-    html_email = generate_veyra_otp_email_html(code)
-    logger.info(f"veyra_otp_dispatched | email={clean_email} code={code} ttl=300")
-
-    return schemas.OtpSendResponse(
-        status="dispatched",
-        email=clean_email,
-        expires_in=300,
-        dev_otp=code,
-        html_preview=html_email
-    )
-
-
-@app.post("/auth/otp/verify", response_model=schemas.OtpVerifyResponse, tags=["Auth"])
-async def verify_otp(
-    payload: schemas.OtpVerifyRequest,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis)
-):
-    """
-    Validates the 6-digit OTP from Redis. Upon verification, either logs in the existing user
-    or completes registration and returns a signed JWT access token.
-    """
-    clean_email = payload.email.strip().lower()
-    redis_key = f"veyra:otp:{clean_email}"
-    cached_code = await redis.get(redis_key)
-
-    if not cached_code:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification code expired or not found. Please request a new code."
-        )
-
-    code_str = cached_code.decode("utf-8") if isinstance(cached_code, bytes) else str(cached_code)
-    if code_str != payload.code.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid verification code. Please check your email and try again."
-        )
-
-    # Consume the single-use OTP
-    await redis.delete(redis_key)
-
-    # Check if user already exists
-    query = select(models.User).where(models.User.email == clean_email)
-    result = await db.execute(query)
-    user = result.scalar_one_or_none()
-
-    if not user:
-        if not payload.password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password is required to complete new Veyra account registration."
-            )
-        user = models.User(
-            email=clean_email,
-            full_name=payload.full_name or "Veyra Client",
-            hashed_password=security.hash_password(payload.password),
-            role=models.UserRole.CUSTOMER
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-
-        # Auto-provision initial primary checking account with €500.00
-        iban = f"DE89{uuid.uuid4().hex[:18].upper()}"
-        initial_account = models.Account(
-            user_id=user.id,
-            account_number=iban,
-            owner_name=user.full_name,
-            balance=50000
-        )
-        db.add(initial_account)
-        await db.commit()
-
-    access_token = security.create_access_token(
-        user_id=user.id,
-        email=user.email,
-        role=user.role.value
-    )
-
-    return schemas.OtpVerifyResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user
-    )
-
 
 
 @app.get("/auth/me", response_model=schemas.UserResponse, tags=["Auth"])
@@ -309,14 +178,15 @@ async def create_account(
     """
     Creates a new bank account bound to the currently authenticated user.
     """
-    generated_iban = f"DE89{uuid.uuid4().hex[:18].upper()}"
+    generated_iban = generate_iban(payload.currency)
     owner_name = payload.owner_name if payload.owner_name else current_user.full_name
 
     new_account = models.Account(
         user_id=current_user.id,
         account_number=generated_iban,
         owner_name=owner_name,
-        balance=payload.initial_balance
+        balance=payload.initial_balance,
+        currency=payload.currency, kind=payload.kind, goal=payload.goal
     )
 
     db.add(new_account)
@@ -438,12 +308,14 @@ async def transfer_funds(
     guards.evaluate_anti_fraud_rules(payload.amount)
 
     # 4. Redis Fast-Path Idempotency Check
-    redis_key = f"idempotency:{payload.idempotency_key}"
+    redis_key = f"idempotency:{current_user.id}:{payload.idempotency_key}"
     is_new_request = await redis.set(redis_key, "PROCESSING", ex=60, nx=True)
 
     if not is_new_request:
-        existing_tx_query = select(models.Transaction).where(
-            models.Transaction.idempotency_key == payload.idempotency_key
+        existing_tx_query = select(models.Transaction).join(models.LedgerEntry).join(models.Account).where(
+            models.Transaction.idempotency_key == payload.idempotency_key,
+            models.Account.user_id == current_user.id,
+            models.LedgerEntry.entry_type == models.EntryType.DEBIT
         )
         tx_result = await db.execute(existing_tx_query)
         existing_tx = tx_result.scalar_one_or_none()
@@ -488,6 +360,9 @@ async def transfer_funds(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: You can only transfer funds from your own account."
             )
+
+        if sender.currency != receiver.currency:
+            raise HTTPException(status_code=400, detail="Use currency exchange for different settlement currencies.")
 
         if sender.balance < payload.amount:
             raise HTTPException(
@@ -534,11 +409,9 @@ async def transfer_funds(
         await redis.delete(redis_key)
         raise
 
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-assets_dir = os.path.join(static_dir, "assets")
+register_veyra_routes(app, get_current_user)
 
-if os.path.exists(assets_dir):
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
 
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -551,13 +424,3 @@ async def serve_banking_ui():
     with open(html_path, "r", encoding="utf-8") as f:
         return f.read()
 
-
-@app.get("/veyra-logo.png", tags=["Frontend"])
-async def serve_veyra_logo():
-    return FileResponse(os.path.join(static_dir, "veyra-logo.png"))
-
-
-@app.get("/veyra-logo-wide.png", tags=["Frontend"])
-async def serve_veyra_logo_wide():
-    return FileResponse(os.path.join(static_dir, "veyra-logo-wide.png"))
-

@@ -26,13 +26,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int, email: str, role: str) -> str:
+def create_access_token(user_id: int, email: str, role: str, version: int = 0) -> str:
     """Generates a cryptographically signed JWT access token."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "email": email,
         "role": role,
+        "ver": version,
         "exp": expire
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

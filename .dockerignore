@@ -3,4 +3,7 @@ __pycache__/
 *.pyc
 .git/
 .pytest_cache/
+.cleanup-quarantine/
+frontend/
+index.html
 .env

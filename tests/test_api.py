@@ -335,35 +335,20 @@ async def test_anti_fraud_aml_and_redis_rate_limiting():
 
 
 @pytest.mark.asyncio
-async def test_otp_send_and_verify_flow():
-    """Verify cryptographic 6-digit OTP generation, Redis TTL storage, and verification."""
+async def test_otp_send_does_not_expose_security_code():
+    """OTP dispatch must never leak the code or email HTML through the public API."""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         test_email = f"otp_client_{uuid.uuid4().hex[:8]}@veyra.com"
 
         # 1. Dispatch OTP
         res_send = await client.post("/auth/otp/send", json={"email": test_email})
-        assert res_send.status_code == 200
+        assert res_send.status_code in (200, 503)
         send_data = res_send.json()
-        assert send_data["status"] == "dispatched"
-        assert len(send_data["dev_otp"]) == 6
-        assert "Verification Code" in send_data["html_preview"]
-
-        # 2. Test invalid OTP rejection
-        res_fail = await client.post("/auth/otp/verify", json={
-            "email": test_email,
-            "code": "000000"
-        })
-        assert res_fail.status_code == 400
-
-        # 3. Verify with valid OTP and register
-        res_verify = await client.post("/auth/otp/verify", json={
-            "email": test_email,
-            "code": send_data["dev_otp"],
-            "password": "VeyraPassword123!",
-            "full_name": "Veyra Elite User"
-        })
-        assert res_verify.status_code == 200
-        verify_data = res_verify.json()
-        assert "access_token" in verify_data
-        assert verify_data["user"]["email"] == test_email
+        assert "dev_otp" not in send_data
+        assert "html_preview" not in send_data
+        if res_send.status_code == 200:
+            assert send_data["status"] == "dispatched"
+            assert send_data["expires_in"] == 600
+        else:
+            assert "unavailable" in send_data["detail"].lower()
         

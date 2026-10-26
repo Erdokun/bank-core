@@ -33,8 +33,18 @@ services:
     environment:
       DATABASE_URL: "postgresql+asyncpg://bank_user:bank_password123@postgres:5432/bank_db"
       REDIS_URL: "redis://redis:6379/0"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_TLS: "${SMTP_TLS:-true}"
+      SMTP_SSL: "${SMTP_SSL:-false}"
+      PUBLIC_APP_URL: "${PUBLIC_APP_URL:-http://localhost:8000}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-development-only-change-me}"
     volumes:
       - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini:ro
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:

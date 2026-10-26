@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict
 from app.models import UserRole
 
@@ -7,6 +7,9 @@ from app.models import UserRole
 class AccountCreate(BaseModel):
     owner_name: Optional[str] = Field(default=None, max_length=100, examples=["Erdem Celik"])
     initial_balance: int = Field(default=0, ge=0, description="Initial balance in cents (e.g., 10000 = 100.00 EUR)")
+    currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
+    kind: Literal["current", "space"] = "current"
+    goal: int = Field(default=0, ge=0)
 
 
 class AccountResponse(BaseModel):
@@ -15,6 +18,9 @@ class AccountResponse(BaseModel):
     account_number: str
     owner_name: str
     balance: int
+    currency: str = "EUR"
+    kind: str = "current"
+    goal: int = 0
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -63,6 +69,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    settings: dict = Field(default_factory=dict)
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -71,6 +78,7 @@ class UserResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: str = Field(..., examples=["erdem@bank.de"])
     password: str = Field(..., examples=["StrongPass123!"])
+    code: Optional[str] = Field(default=None, pattern=r"^\d{6}$")
 
 
 class TokenResponse(BaseModel):
@@ -79,22 +87,22 @@ class TokenResponse(BaseModel):
 
 
 class OtpSendRequest(BaseModel):
-    email: str = Field(..., examples=["user@veyra.com"])
+    email: str = Field(..., min_length=5, max_length=255, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 class OtpSendResponse(BaseModel):
     status: str
     email: str
-    expires_in: int = 300
-    dev_otp: Optional[str] = None
-    html_preview: Optional[str] = None
+    expires_in: int = 600
 
 
 class OtpVerifyRequest(BaseModel):
     email: str
-    code: str = Field(..., min_length=6, max_length=6, examples=["849201"])
-    password: Optional[str] = None
-    full_name: Optional[str] = None
+    code: str = Field(..., pattern=r"^\d{6}$")
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: str = Field(..., min_length=2, max_length=100)
+    primary_currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
+    purpose: str = Field(default="Personal Daily Banking", max_length=100)
 
 
 class OtpVerifyResponse(BaseModel):
