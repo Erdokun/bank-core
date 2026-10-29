@@ -12,9 +12,9 @@ import secrets
 import smtplib
 import ssl
 import uuid
+from typing import Literal
 from decimal import Decimal, ROUND_HALF_UP
 from email.message import EmailMessage
-from urllib.parse import urlencode
 
 import httpx
 from fastapi import Depends, HTTPException, Query
@@ -40,31 +40,33 @@ def otp_digest(email, code, purpose):
     return hmac.new(security.SECRET_KEY.encode(), f"{purpose}:{email}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
-def generate_veyra_otp_email_html(code):
+def generate_veyra_otp_email_html(code, purpose="register"):
     app_url = os.getenv("PUBLIC_APP_URL", "http://localhost:8000").rstrip("/")
-    copy_url = app_url + "/#" + urlencode({"verification_code": code})
+    copy_url = app_url + "/"
+    title = {"reset": "Reset your Veyra password", "login": "Confirm your sign-in", "settings": "Confirm your security change"}.get(purpose, "Verify your email address")
+    instruction = {"reset": "Use this code to reset your Veyra password. If you did not request this, ignore this email.", "login": "Use this code to finish signing in to Veyra.", "settings": "Use this code to confirm a change to your Veyra security settings."}.get(purpose, "Use this code to verify your email address and activate your Veyra account.")
     return f'''<!doctype html><html lang="en"><body style="margin:0;background:#f4f5f7;padding:40px 16px;font-family:Arial,sans-serif;color:#17212a">
     <table role="presentation" style="max-width:520px;margin:auto;background:white;border-radius:16px;padding:40px;width:100%"><tr><td>
     <div style="font-size:30px;letter-spacing:-1px;margin-bottom:38px"><b>Ⅴ</b> Veyra</div>
-    <h1 style="font-size:25px">Verify your email address</h1><p style="line-height:1.8;color:#5b626c">Hello,<br>Here is the code you will need to verify your email address and activate your Veyra account.</p>
+    <h1 style="font-size:25px">{title}</h1><p style="line-height:1.8;color:#5b626c">Hello,<br>{instruction}</p>
     <div style="font-family:monospace;font-size:38px;letter-spacing:8px;text-align:center;padding:28px 5px;background:#f6f7f9;border:1px solid #e6e8ec;border-radius:10px;user-select:all">{' '.join(code)}</div>
-    <p style="text-align:center;margin:26px"><a href="{copy_url}" style="display:inline-block;padding:13px 26px;background:#15271f;color:white;text-decoration:none;border-radius:8px">Copy Code</a></p>
-    <p style="font-size:12px;color:#757c84;text-align:center">Opens Veyra to copy your code. You can also select the code above.</p>
+    <p style="text-align:center;margin:26px"><a href="{copy_url}" style="display:inline-block;padding:13px 26px;background:#15271f;color:white;text-decoration:none;border-radius:8px">Open Veyra</a></p>
+    <p style="font-size:12px;color:#757c84;text-align:center">Enter this code in Veyra. You can select and copy the code above.</p>
     <p style="font-size:13px;color:#5b626c">Note: This code will expire in 10 minutes.</p><p style="font-size:12px;color:#8c929a;line-height:1.7;margin-top:30px">If you did not request this code, you can ignore this email.<br><br>Veyra · Private Wealth &amp; Digital Ledger<br>Berlin, Germany<br>This is an automated email. Please do not reply.</p>
     </td></tr></table></body></html>'''
 
 
-async def send_otp_email_smtp(email, code):
+async def send_otp_email_smtp(email, code, purpose="register"):
     def dispatch():
         host = os.getenv("SMTP_HOST", "")
         if not host:
             raise RuntimeError("SMTP_HOST is not configured")
         message = EmailMessage()
-        message["Subject"] = "Your Veyra verification code"
+        message["Subject"] = {"reset": "Reset your Veyra password", "login": "Your Veyra sign-in code", "settings": "Confirm your Veyra security change"}.get(purpose, "Your Veyra verification code")
         message["From"] = "Veyra <no-reply@veyra.com>"
         message["To"] = email
-        message.set_content(f"Hello,\nHere is the code you will need to verify your email address and activate your Veyra account.\n\n{code}\n\nNote: This code will expire in 10 minutes.\nVeyra · Berlin, Germany")
-        message.add_alternative(generate_veyra_otp_email_html(code), subtype="html")
+        message.set_content(f"{message['Subject']}\n\nYour one-time code: {code}\n\nThis code expires in 10 minutes. If you did not request it, ignore this email.\nVeyra")
+        message.add_alternative(generate_veyra_otp_email_html(code, purpose), subtype="html")
         use_ssl = os.getenv("SMTP_SSL", "false").lower() == "true"
         port = int(os.getenv("SMTP_PORT", "465" if use_ssl else "587"))
         factory = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
@@ -93,7 +95,7 @@ async def issue_otp(email, redis, purpose="register"):
     await redis.hset(key, mapping={"digest": digest, "attempts": "0"})
     await redis.expire(key, 600)
     try:
-        await send_otp_email_smtp(email, code)
+        await send_otp_email_smtp(email, code, purpose)
     except Exception:
         await redis.delete(key, key + ":cooldown")
         log.warning("smtp_delivery_failed")
@@ -118,6 +120,14 @@ class SettingsUpdate(BaseModel):
     card_frozen: bool | None = None
     online_payments: bool | None = None
     contactless_limit: int | None = Field(default=None, ge=0, le=50000)
+    daily_limit: int | None = Field(default=None, ge=0, le=1000000)
+    atm_limit: int | None = Field(default=None, ge=0, le=500000)
+    theme: Literal["light", "dark"] | None = None
+    primary_currency: Literal["EUR", "USD", "TRY", "GBP"] | None = None
+    hide_balances: bool | None = None
+    compact_activity: bool | None = None
+    idle_timeout: Literal[5, 15, 30, 60] | None = None
+    monthly_budget: int | None = Field(default=None, ge=0, le=100000000)
     two_factor: bool | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
     code: str | None = Field(default=None, pattern=r"^\d{6}$")
@@ -125,6 +135,19 @@ class SettingsUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=100, pattern=r"^\S(?:.*\S)?$")
+
+
+class ResetRequest(schemas.OtpSendRequest):
+    pass
+
+
+class PasswordReset(ResetRequest):
+    code: str = Field(pattern=r"^\d{6}$")
     new_password: str = Field(min_length=8, max_length=128)
 
 
@@ -139,6 +162,44 @@ class FxExecute(BaseModel):
 
 
 def register_veyra_routes(app, current_user_dependency):
+    @app.post("/auth/password/reset/request", tags=["Auth"])
+    async def request_reset(payload: ResetRequest, db=Depends(get_db), redis=Depends(get_redis)):
+        email = payload.email.strip().lower()
+        # The same response and cooldown apply whether the address exists or not.
+        gate = f"veyra:reset-request:{email}"
+        if not await redis.set(gate, "1", nx=True, ex=60):
+            raise HTTPException(429, "Please wait 60 seconds before requesting another code.")
+        user = (await db.execute(select(models.User).where(models.User.email == email))).scalar_one_or_none()
+        if user:
+            try:
+                await issue_otp(email, redis, "reset")
+            except HTTPException as exc:
+                if exc.status_code != 503:
+                    raise
+        return {"message": "If this email has an account, a reset code will arrive shortly."}
+
+    @app.post("/auth/password/reset", tags=["Auth"])
+    async def reset_password(payload: PasswordReset, db=Depends(get_db), redis=Depends(get_redis)):
+        email = payload.email.strip().lower()
+        await consume_otp(email, payload.code, redis, "reset")
+        user = (await db.execute(select(models.User).where(models.User.email == email).with_for_update())).scalar_one_or_none()
+        if not user:
+            raise HTTPException(400, "Code is invalid, expired or already used.")
+        user.hashed_password = security.hash_password(payload.new_password)
+        user.token_version += 1
+        await db.commit()
+        return {"status": "updated"}
+
+    @app.patch("/auth/profile", response_model=schemas.UserResponse, tags=["Auth"])
+    async def update_profile(payload: ProfileUpdate, user=Depends(current_user_dependency), db=Depends(get_db)):
+        locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        locked.full_name = payload.full_name
+        accounts = (await db.execute(select(models.Account).where(models.Account.user_id == user.id, models.Account.kind == "current").order_by(models.Account.id).with_for_update())).scalars().all()
+        for account in accounts:
+            account.owner_name = payload.full_name
+        await db.commit()
+        return locked
+
     @app.post("/auth/otp/send", response_model=schemas.OtpSendResponse, tags=["Auth"])
     async def send_otp(payload: schemas.OtpSendRequest, redis=Depends(get_redis), db=Depends(get_db)):
         email = payload.email.strip().lower()

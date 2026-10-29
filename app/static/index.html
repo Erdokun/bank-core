@@ -3,24 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Veyra — Private Wealth &amp; Ledger</title>
-<meta name="description" content="Veyra Private Wealth &amp; Ledger: multi-currency accounts, 24/7 FAST transfers, Veyra Black titanium cards and an atomic double-entry ledger engine.">
-<meta name="theme-color" content="#04101f">
+<title>Veyra — Your money, in perspective.</title>
+<meta name="description" content="Bring your currencies, transfers and savings together in one considered workspace. Meet Veyra.">
+<meta name="theme-color" content="#000000">
 <script>(function(){try{document.documentElement.dataset.theme=localStorage.getItem('veyra-theme')||'dark';}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
 <link rel="icon" type="image/png" href="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
-<script>
-(function(){try{
-  if(!window.matchMedia||!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    document.documentElement.classList.add('anim');
-  }
-}catch(e){}})();
-</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Prata&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com/3.4.17"></script>
-<script defer src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+
+
 <style>
 /* =====================================================================
    0. RESET + DESIGN UNIT  (one --u = one design pixel of 1353 x 1163)
@@ -50,307 +44,6 @@ body{background:#04101f;color:var(--ink);font-family:var(--font-sans);
 button,input,select,textarea{font:inherit;color:inherit}
 .svg-sprite{position:absolute;width:0;height:0;overflow:hidden}
 .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-
-/* =====================================================================
-   1. HERO STAGE
-   ===================================================================== */
-.stage{position:fixed;inset:0;overflow:hidden;isolation:isolate}
-.sky{position:absolute;inset:0;z-index:0;
-  background-image:url("https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png");
-  background-size:cover;background-position:center;background-repeat:no-repeat}
-.sky video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  display:block;opacity:0;transition:opacity .22s linear}
-.sky video.is-active{opacity:1}
-@media (prefers-reduced-motion:reduce){ .sky video{display:none} }
-.ui{position:absolute;inset:0;z-index:3}
-
-/* side planet slots */
-.planet{position:absolute;z-index:-1;padding:0;border:0;background:none;
-  -webkit-appearance:none;appearance:none;line-height:0;cursor:pointer;
-  pointer-events:auto;transition:transform .45s cubic-bezier(.22,1,.36,1)}
-.planet img{display:none;width:100%;height:auto}
-.planet img.is-shown{display:block}
-.planet:hover{transform:scale(1.045)}
-.planet:active{transform:scale(.99)}
-.planet-l{width:calc(143 * var(--u));left:calc(-69.5 * var(--u));top:calc(-38.3 * var(--u))}
-.planet-r{width:calc(143 * var(--u));right:calc(-64.7 * var(--u));top:calc(-40.6 * var(--u))}
-@media (prefers-reduced-motion:reduce){
-  .planet{transition:none} .planet:hover,.planet:active{transform:none} }
-
-/* layout */
-.copy{position:absolute;inset:0;transform:translateY(var(--vshift));pointer-events:none}
-.copy a{pointer-events:auto}
-.col{position:absolute;left:0;right:calc(var(--gutter) * var(--u));text-align:center}
-
-/* nav */
-.navbar{position:absolute;top:0;left:0;right:0;z-index:6;height:calc(88 * var(--u))}
-.navbar::after{content:"";position:absolute;left:calc(25 * var(--u));
-  right:calc(49 * var(--u));top:calc(86 * var(--u));height:calc(2 * var(--u));
-  background:var(--rule)}
-.navbar::after{display:none!important}
-.theme-toggle{width:calc(40 * var(--u));height:calc(40 * var(--u));border:1px solid rgba(255,255,255,.22);border-radius:50%;background:rgba(5,12,18,.28);display:grid;place-items:center;margin-left:calc(20 * var(--u));cursor:pointer;transition:transform .3s,background .45s,color .45s;flex:none}
-.theme-toggle:hover{transform:rotate(18deg);background:rgba(255,255,255,.12)}
-.theme-toggle .ic{width:calc(18 * var(--u));height:calc(18 * var(--u))}
-.planet,.pager,.label{display:none!important}
-html[data-theme="light"] body{background:#edf6f7;color:#102633}
-html[data-theme="light"] .sky{background-image:linear-gradient(150deg,rgba(242,250,249,.24),rgba(179,220,237,.38)),url("https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png")!important}
-html[data-theme="light"] .sky::before{content:"";position:absolute;inset:-20%;background:radial-gradient(ellipse at 25% 65%,rgba(255,255,255,.9),transparent 32%),radial-gradient(ellipse at 72% 15%,rgba(220,242,250,.8),transparent 38%);animation:light-clouds 22s ease-in-out infinite alternate;z-index:1;pointer-events:none}
-html[data-theme="light"] .sky video{filter:brightness(1.35) saturate(.68) contrast(.84);mix-blend-mode:multiply;opacity:.5}
-html[data-theme="light"] .ui{background:linear-gradient(90deg,rgba(238,248,248,.58),transparent 58%)}
-html[data-theme="light"] .logo,html[data-theme="light"] .links a,html[data-theme="light"] h1.title,html[data-theme="light"] .eyebrow,html[data-theme="light"] p.lede{color:#102633}
-html[data-theme="light"] .logo svg path:first-child{fill:#102633}
-html[data-theme="light"] .logo small{color:rgba(16,38,51,.58);border-color:rgba(16,38,51,.2)}
-html[data-theme="light"] .theme-toggle{color:#102633;border-color:rgba(16,38,51,.24);background:rgba(255,255,255,.38)}
-html[data-theme="light"] .links a.open{color:#f4faf5;background:linear-gradient(180deg,#315943,#193728)}
-html[data-theme="light"] .scroll{background:rgba(255,255,255,.7)}
-html[data-theme="light"] .scroll path{stroke:#17352b}
-@keyframes light-clouds{to{transform:translate3d(7%,2%,0)}}
-.navrow{position:absolute;left:calc(25 * var(--u));right:calc(49 * var(--u));top:0;
-  height:calc(86 * var(--u));display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:calc(10 * var(--u));font-family:var(--font-sans);
-  font-weight:700;font-size:calc(21 * var(--u));letter-spacing:calc(-0.4 * var(--u));line-height:1;
-  color:#fff;text-decoration:none;white-space:nowrap;position:relative;top:calc(-1 * var(--u))}
-.logo svg{width:calc(30 * var(--u));height:calc(30 * var(--u));display:block}
-.logo small{font-weight:500;font-size:calc(12 * var(--u));letter-spacing:calc(1.6 * var(--u));
-  color:rgba(255,255,255,.62);text-transform:uppercase;margin-left:calc(4 * var(--u));
-  padding-left:calc(12 * var(--u));border-left:calc(1.5 * var(--u)) solid rgba(255,255,255,.22)}
-.burger{display:none;position:relative;width:calc(46 * var(--u));height:calc(46 * var(--u));
-  padding:0;border:0;background:none;cursor:pointer;flex-direction:column;
-  align-items:center;justify-content:center;gap:calc(6 * var(--u));flex:none}
-.burger span{display:block;width:calc(24 * var(--u));height:calc(2 * var(--u));
-  border-radius:calc(2 * var(--u));background:#fff;
-  transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .18s linear}
-.navrow[data-open="true"] .burger span:nth-child(1){transform:translateY(calc(8 * var(--u))) rotate(45deg)}
-.navrow[data-open="true"] .burger span:nth-child(2){opacity:0}
-.navrow[data-open="true"] .burger span:nth-child(3){transform:translateY(calc(-8 * var(--u))) rotate(-45deg)}
-.links{display:flex;align-items:center}
-.links a{position:relative;display:flex;align-items:center;height:calc(86 * var(--u));
-  font-size:calc(16.4 * var(--u));font-weight:500;line-height:1;color:rgba(255,255,255,.87);
-  text-decoration:none;padding:0 calc(13 * var(--u));
-  letter-spacing:calc(-0.25 * var(--u));white-space:nowrap;transition:color .2s}
-.links a:hover{color:#fff}
-.links a[aria-current="page"]{color:#fff}
-.links a[aria-current="page"]::after{content:"";position:absolute;left:calc(13 * var(--u));right:calc(13 * var(--u));
-  top:calc(83.5 * var(--u));height:calc(4 * var(--u));background:var(--cyan);
-  border-radius:calc(1 * var(--u))}
-.links a + a{margin-left:calc(8 * var(--u))}
-.links a.signin{margin-left:calc(30 * var(--u))}
-.links a.signin::before{content:"";position:absolute;left:calc(-16 * var(--u));top:50%;
-  width:calc(1.5 * var(--u));height:calc(20 * var(--u));margin-top:calc(-10 * var(--u));background:var(--rule)}
-.links a.open{margin-left:calc(12 * var(--u));height:calc(40 * var(--u));
-  padding:calc(2 * var(--u)) calc(20 * var(--u)) 0;border-radius:calc(20 * var(--u));
-  gap:calc(9 * var(--u));font-size:calc(15.6 * var(--u));font-weight:700;letter-spacing:calc(-0.2 * var(--u));
-  color:var(--btn-ink);
-  background:linear-gradient(180deg,#ffffff 0%,#d8ecfe 9%,#dceefe 72%,#f4f9ff 100%);
-  box-shadow:0 calc(3 * var(--u)) calc(14 * var(--u)) rgba(255,255,255,.22),
-             inset 0 0 0 calc(1.5 * var(--u)) rgba(255,255,255,.92);flex:none}
-.links a.open svg{width:calc(13 * var(--u));height:calc(13 * var(--u));margin-top:calc(-2 * var(--u))}
-
-/* hero copy */
-.eyebrow{top:calc(196 * var(--u));font-size:calc(19.5 * var(--u));font-weight:500;
-  line-height:1;letter-spacing:calc(7 * var(--u));text-indent:calc(7 * var(--u));color:rgba(255,255,255,.87)}
-h1.title{top:calc(262 * var(--u));font-family:var(--font-sans);font-weight:300;
-  font-size:calc(118 * var(--u));line-height:1;letter-spacing:calc(24 * var(--u));
-  text-indent:calc(24 * var(--u));color:#fff}
-.rule{top:calc(405.5 * var(--u));height:calc(5 * var(--u));font-size:0;line-height:0;
-  padding-right:calc(2 * var(--u))}
-.rule span{display:inline-block;vertical-align:top;width:calc(100 * var(--u));
-  height:100%;border-radius:calc(2.5 * var(--u));background:var(--cyan)}
-p.lede{top:calc(433.2 * var(--u));font-size:calc(18.36 * var(--u));font-weight:400;
-  line-height:calc(30 * var(--u));color:rgba(255,255,255,.87);
-  max-width:calc(720 * var(--u));margin:0 auto;text-wrap:balance}
-p.lede.swap{animation:lede-in .5s cubic-bezier(.22,1,.36,1) both}
-@keyframes lede-in{from{opacity:0;transform:translateY(calc(8 * var(--u)))}to{opacity:1;transform:none}}
-
-/* CTA row */
-.cta{top:calc(597 * var(--u));height:calc(66 * var(--u));isolation:isolate}
-.cta a{display:inline-flex;align-items:center;justify-content:center;
-  width:calc(216 * var(--u));height:calc(66 * var(--u));border-radius:calc(33 * var(--u));
-  font-size:calc(17 * var(--u));font-weight:700;letter-spacing:calc(0.6 * var(--u));text-indent:0;
-  line-height:1;color:var(--btn-ink);text-decoration:none;padding-top:calc(2 * var(--u));
-  background:linear-gradient(180deg,#ffffff 0%,#d6e8f8 4%,#d9ecfe 72%,#ffffff 100%);
-  box-shadow:0 calc(10 * var(--u)) calc(18 * var(--u)) calc(-8 * var(--u)) rgba(255,255,255,.50),
-             0 0 calc(26 * var(--u)) rgba(255,255,255,.18),
-             inset 0 0 0 calc(2 * var(--u)) rgba(255,255,255,.9);
-  transition:transform .3s cubic-bezier(.22,1,.36,1)}
-.cta a:hover{transform:translateY(calc(-2 * var(--u)))}
-.cta a:active{transform:scale(.98)}
-.label{position:absolute;top:calc(33 * var(--u));font-family:var(--font-serif);
-  font-weight:400;font-size:calc(17.8 * var(--u));letter-spacing:calc(4.6 * var(--u));
-  line-height:1;color:#fff;white-space:nowrap}
-.label.label-l{left:calc(111 * var(--u))}
-.label.label-r{right:calc(104 * var(--u))}
-
-/* planet pager (scroll position) */
-.pager{position:absolute;z-index:4;right:calc(49 * var(--u));top:50%;transform:translateY(-50%);
-  display:flex;flex-direction:column;align-items:flex-end;gap:calc(12 * var(--u))}
-.pager button{display:flex;align-items:center;gap:calc(12 * var(--u));border:0;background:none;cursor:pointer;
-  padding:calc(4 * var(--u)) 0;color:rgba(255,255,255,.44);font-size:calc(12 * var(--u));font-weight:600;
-  letter-spacing:calc(2.4 * var(--u));transition:color .3s}
-.pager button i{display:block;width:calc(18 * var(--u));height:calc(2 * var(--u));border-radius:calc(1 * var(--u));
-  background:currentColor;transition:width .45s cubic-bezier(.22,1,.36,1), background .3s}
-.pager button span{opacity:0;transform:translateX(calc(6 * var(--u)));transition:opacity .3s, transform .3s}
-.pager button:hover span,.pager button[aria-current="true"] span{opacity:1;transform:none}
-.pager button[aria-current="true"]{color:#fff}
-.pager button[aria-current="true"] i{width:calc(44 * var(--u));background:var(--cyan)}
-
-/* scroll control */
-.scroll{position:absolute;z-index:4;left:50%;
-  margin-left:calc((-48 - (var(--gutter) / 2)) * var(--u));bottom:calc(68 * var(--u));
-  width:calc(96 * var(--u));height:calc(96 * var(--u));border-radius:50%;
-  background:rgba(24,30,42,.70);-webkit-backdrop-filter:blur(calc(6 * var(--u)));
-  backdrop-filter:blur(calc(6 * var(--u)));border:0;display:flex;align-items:center;
-  justify-content:center;cursor:pointer}
-.scroll svg{width:calc(20 * var(--u));height:calc(25 * var(--u));display:block;
-  transition:transform .5s cubic-bezier(.22,1,.36,1)}
-.scroll.is-end svg{transform:rotate(180deg)}
-
-/* focus */
-.scroll:focus-visible,.links a:focus-visible,.cta a:focus-visible,.logo:focus-visible,.pager button:focus-visible,.burger:focus-visible{
-  outline:calc(2 * var(--u)) solid var(--cyan);outline-offset:calc(3 * var(--u))}
-.planet:focus-visible{outline:calc(2 * var(--u)) solid var(--cyan);
-  outline-offset:calc(6 * var(--u));border-radius:50%}
-
-/* ---------- RESPONSIVE A: nav collapse ---------- */
-@media (max-width:1030px), (max-height:620px){
-  .navrow{left:calc(25 * var(--u));right:calc(25 * var(--u))}
-  .burger{display:flex}
-  .logo small{display:none}
-  .links{position:absolute;top:calc(96 * var(--u));right:0;z-index:5;
-    width:min(calc(324 * var(--u)), calc(100vw - 50 * var(--u)));
-    flex-direction:column;align-items:stretch;padding:calc(12 * var(--u));
-    border-radius:calc(20 * var(--u));background:rgba(9,21,42,.84);
-    -webkit-backdrop-filter:blur(calc(18 * var(--u)));backdrop-filter:blur(calc(18 * var(--u)));
-    border:calc(1 * var(--u)) solid rgba(255,255,255,.14);
-    box-shadow:0 calc(18 * var(--u)) calc(44 * var(--u)) rgba(2,8,20,.55);
-    opacity:0;visibility:hidden;transform:translateY(calc(-10 * var(--u)));
-    transition:opacity .24s ease, transform .28s cubic-bezier(.4,0,.2,1), visibility .28s}
-  .navrow[data-open="true"] .links{opacity:1;visibility:visible;transform:none}
-  .links a:nth-child(n){margin-left:0;height:auto;justify-content:flex-start;
-    padding:calc(14 * var(--u)) calc(16 * var(--u));font-size:calc(17 * var(--u));
-    letter-spacing:calc(-.3 * var(--u))}
-  .links a + a{border-top:calc(1 * var(--u)) solid rgba(255,255,255,.08)}
-  .links a.signin::before{content:none}
-  .links a[aria-current="page"]::after{top:auto;bottom:calc(9 * var(--u));
-    left:calc(16 * var(--u));right:auto;width:calc(26 * var(--u));height:calc(3 * var(--u))}
-  .links a.open:nth-child(n){margin:calc(14 * var(--u)) 0 calc(2 * var(--u));width:100%;
-    height:calc(46 * var(--u));border-radius:calc(23 * var(--u));justify-content:center;
-    padding-top:calc(2 * var(--u));font-size:calc(17 * var(--u));
-    letter-spacing:calc(-.2 * var(--u));border-top:0}
-  .links a.open::after{content:none}
-  .pager{right:calc(25 * var(--u))}
-}
-/* ---------- RESPONSIVE B: tablet ---------- */
-@media (min-width:580px) and (max-width:1030px) and (min-height:621px){
-  :root{--gutter:0;
-    --u:min(max(min(.85px, calc(100vh / 780)), min(calc(100vw / 900), calc(100vh / 1163))), 1.15px);
-    --dh-px:calc(1120 * var(--u));
-    --vshift:calc(max(0px, (100vh - var(--dh-px))) * .38)}
-  @supports (height:100dvh){
-    :root{--u:min(max(min(.85px, calc(100dvh / 780)), min(calc(100vw / 900), calc(100dvh / 1163))), 1.15px);
-      --vshift:calc(max(0px, (100dvh - var(--dh-px))) * .38)}
-  }
-  .navbar::after{left:calc(25 * var(--u));right:calc(25 * var(--u))}
-  p.lede{max-width:calc(620 * var(--u));margin-left:auto;margin-right:auto;text-wrap:pretty}
-  .label.label-r{right:calc(116 * var(--u))}
-}
-/* ---------- RESPONSIVE C: phone (flow layout) ---------- */
-@media (max-width:579px), (max-height:620px){
-  :root{--gutter:0;
-    --u:max(min(.92px, calc(100vh / 620)), min(calc(100vw / 430), calc(100vh / 880)));
-    --dh-px:calc(880 * var(--u));
-    --vshift:calc(max(0px, (100vh - var(--dh-px))) * .34)}
-  @supports (height:100dvh){
-    :root{--u:max(min(.92px, calc(100dvh / 620)), min(calc(100vw / 430), calc(100dvh / 880)));
-      --vshift:calc(max(0px, (100dvh - var(--dh-px))) * .34)}
-  }
-  .navbar{height:calc(76 * var(--u))}
-  .navbar::after{left:calc(24 * var(--u));right:calc(24 * var(--u));top:calc(74 * var(--u))}
-  .navrow{left:calc(24 * var(--u));right:calc(24 * var(--u));height:calc(74 * var(--u))}
-  .links{top:calc(84 * var(--u))}
-  .copy{top:calc(76 * var(--u));display:flex;flex-direction:column;align-items:center;
-    padding:calc(56 * var(--u)) calc(26 * var(--u)) 0}
-  .col{position:static;width:100%;right:auto}
-  .eyebrow{font-size:calc(14 * var(--u));letter-spacing:calc(4.5 * var(--u));text-indent:calc(4.5 * var(--u))}
-  h1.title{font-size:calc(86 * var(--u));margin-top:calc(15 * var(--u));
-    letter-spacing:calc(12 * var(--u));text-indent:calc(12 * var(--u))}
-  .rule{margin-top:calc(20 * var(--u));height:calc(5 * var(--u));padding-right:0}
-  .rule span{width:calc(84 * var(--u))}
-  p.lede{margin-top:calc(19 * var(--u));font-size:calc(15.5 * var(--u));
-    line-height:calc(26 * var(--u));max-width:calc(400 * var(--u));text-wrap:balance}
-  .cta{top:auto;margin-top:calc(32 * var(--u));height:calc(60 * var(--u));position:relative}
-  .cta a{width:calc(190 * var(--u));height:calc(60 * var(--u));border-radius:calc(30 * var(--u))}
-  .label{top:50%;transform:translateY(-50%);font-size:calc(16 * var(--u));
-    letter-spacing:calc(4 * var(--u))}
-  .label.label-l{left:calc(56 * var(--u))}
-  .label.label-r{right:calc(60 * var(--u))}
-  .planet-l{width:calc(89 * var(--u));left:calc(-44.5 * var(--u));top:calc(-17 * var(--u))}
-  .planet-r{width:calc(89 * var(--u));right:calc(-44.5 * var(--u));top:calc(-18.3 * var(--u))}
-  .scroll{width:calc(74 * var(--u));height:calc(74 * var(--u));
-    margin-left:calc(-37 * var(--u));bottom:calc(49 * var(--u))}
-  .scroll svg{width:calc(15.5 * var(--u));height:calc(19.5 * var(--u))}
-  .pager{display:none}
-}
-/* ---------- D ---------- */
-@media (max-height:660px){ .scroll{display:none} }
-/* ---------- E: short ---------- */
-@media (max-height:620px){
-  :root{--u:max(min(.85px, calc(100vh / 470)), min(calc(100vw / 640), calc(100vh / 560)));
-    --dh-px:calc(560 * var(--u));--vshift:0px}
-  .copy{padding-top:calc(26 * var(--u))}
-  h1.title{font-size:calc(64 * var(--u));margin-top:calc(8 * var(--u))}
-  .rule{margin-top:calc(12 * var(--u))}
-  p.lede{margin-top:calc(12 * var(--u))}
-  .cta{margin-top:calc(20 * var(--u))}
-  .label{top:50%;transform:translateY(-50%);font-size:calc(15 * var(--u))}
-  .label.label-l{left:calc(58 * var(--u))}
-  .label.label-r{right:calc(58 * var(--u))}
-}
-@media (min-width:821px) and (max-height:660px){ .copy{transform:none} }
-/* ---------- F: narrow phone ---------- */
-@media (max-width:500px){
-  .label{top:calc(100% + 34 * var(--u));transform:none;font-size:calc(15 * var(--u))}
-  .label.label-l{left:calc(6 * var(--u))}
-  .label.label-r{right:calc(6 * var(--u))}
-}
-@media (prefers-reduced-motion:reduce){ .links,.burger span{transition:none} }
-
-/* ---------- ENTRANCE ---------- */
-@keyframes ent-reveal{from{transform:translateY(115%)}to{transform:translateY(0)}}
-@keyframes ent-rise{from{opacity:0;transform:translateY(var(--rise,10px))}to{opacity:1;transform:none}}
-@keyframes ent-settle{from{opacity:0;transform:translateY(var(--rise,8px)) scale(.965)}to{opacity:1;transform:none}}
-@keyframes ent-draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes ent-fade{from{opacity:0}to{opacity:1}}
-.anim{--e-expo:cubic-bezier(.16,1,.3,1);--e-quint:cubic-bezier(.22,1,.36,1);--e-slow:cubic-bezier(.4,0,.2,1)}
-.ent-mask,.ent-line{display:block}
-.anim .ent-mask{overflow:hidden;padding-top:.18em;margin-top:-.18em}
-.anim .ent-line{transform:translateY(115%);will-change:transform}
-.anim .navbar::after,.anim .links a[aria-current="page"]::after,.anim .rule span{transform:scaleX(0)}
-.anim .logo,.anim .links a,.anim .burger,.anim p.lede,.anim .label,.anim .cta a,
-.anim .scroll,.anim .sky,.anim .pager{opacity:0}
-.anim .sky{will-change:opacity}
-.anim .logo,.anim .links a,.anim .burger,.anim .label,.anim .cta a{--rise:calc(8 * var(--u))}
-.anim p.lede{--rise:calc(12 * var(--u))}
-.anim.play .sky{animation:ent-fade 1.6s var(--e-slow) .25s both}
-.anim.play .navbar::after{animation:ent-draw .9s var(--e-expo) .12s both}
-.anim.play .logo{animation:ent-rise .6s var(--e-quint) .20s both}
-.anim.play .links a{animation:ent-rise .55s var(--e-quint) both}
-.anim.play .links a:nth-child(1){animation-delay:.26s}
-.anim.play .links a:nth-child(2){animation-delay:.31s}
-.anim.play .links a:nth-child(3){animation-delay:.36s}
-.anim.play .links a:nth-child(4){animation-delay:.41s}
-.anim.play .links a:nth-child(5){animation-delay:.44s}
-.anim.play .links a.open,.anim.play .burger{animation:ent-settle .6s var(--e-quint) .46s both}
-.anim.play .links a[aria-current="page"]::after{animation:ent-draw .55s var(--e-expo) .60s both}
-.anim.play .eyebrow .ent-line{animation:ent-reveal .75s var(--e-expo) .30s both}
-.anim.play h1.title .ent-line{animation:ent-reveal .95s var(--e-expo) .44s both}
-.anim.play .rule span{animation:ent-draw .65s var(--e-expo) .78s both}
-.anim.play p.lede{animation:ent-rise .7s var(--e-quint) .86s both}
-.anim.play .label.label-l{animation:ent-rise .6s var(--e-quint) 1.04s both}
-.anim.play .label.label-r{animation:ent-rise .6s var(--e-quint) 1.10s both}
-.anim.play .cta a{animation:ent-settle .7s var(--e-quint) 1.14s both}
-.anim.play .scroll{animation:ent-settle .6s var(--e-quint) 1.42s both}
-.anim.play .pager{animation:ent-fade .8s var(--e-slow) 1.30s both}
 
 /* =====================================================================
    2. SHARED: toast, modal shell
@@ -876,6 +569,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
   .done-ic,p.lede.swap,.otp.shake{animation:none}
 }
 </style>
+<link rel="stylesheet" href="/static/veyra.css">
 </head>
 <body>
 
@@ -914,67 +608,49 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 <!-- =====================================================================
      HERO STAGE
      ===================================================================== -->
-<div class="stage" id="stage">
-  <div class="sky">
-    <video data-planet="earth" class="is-active" autoplay muted loop playsinline preload="auto"
-      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202422_3ffb4889-c520-432d-8458-038009eb40df.mp4"
-      poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png" aria-hidden="true"></video>
-  </div>
-
-  <div class="ui">
-    <header class="navbar">
-      <div class="navrow">
-        <a class="logo" href="#" aria-label="Veyra — home">
-          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-            <path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#ffffff"/>
-            <path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#5fd0e1"/>
-          </svg>
-          <span>Veyra</span><small>Private Wealth &amp; Ledger</small>
-        </a>
-        <nav class="links" id="site-nav" aria-label="Primary">
-          <a href="#" data-action="register">Accounts</a>
-          <a href="#" data-action="register">Cards</a>
-          <a href="#" data-action="signin">Security</a>
-          <button class="theme-toggle" type="button" data-action="theme" aria-label="Switch to light mode"><svg class="ic"><use href="#i-sun"/></svg></button>
-          <a href="#" class="signin" id="navSignIn" data-action="signin">Sign In</a>
-          <a href="#" class="open" data-action="register">Open Account
-            <svg viewBox="0 0 12 10" fill="none" aria-hidden="true"><path d="M.8 5h10M7.1 1.4 10.9 5l-3.8 3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </nav>
-        <button class="burger" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
-          <span></span><span></span><span></span>
-        </button>
+<div class="landing" id="stage">
+  <header class="navbar"><div class="navrow">
+    <a class="logo" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#fff"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#79dce8"/></svg><span>Veyra</span></a>
+    <nav class="links" id="site-nav" aria-label="Primary"><a class="signin" id="navSignIn" href="#" data-action="signin">Sign in</a><a class="open" href="#" data-action="register">Get started <svg class="ic"><use href="#i-arrow"/></svg></a></nav>
+    <button class="burger" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav"><span></span><span></span><span></span></button>
+  </div></header>
+  <main>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-art" aria-hidden="true">
+        <video class="hero-fallback" id="earthVideo" muted loop playsinline preload="none" data-poster="/static/assets/earth-poster.png" disablepictureinpicture tabindex="-1"><source data-src="/static/assets/earth-orbit.mp4" type="video/mp4"></video>
+        <canvas class="hero-earth" id="earthCanvas" data-texture="/static/assets/earth-map.jpg" data-clouds="/static/assets/earth-clouds.png"></canvas>
       </div>
-    </header>
-
-    <div class="copy">
-      <div class="col eyebrow"><span class="ent-mask"><span class="ent-line">SOVEREIGN CAPITAL &amp; LIQUIDITY</span></span></div>
-      <h1 class="col title"><span class="ent-mask"><span class="ent-line">VEYRA</span></span></h1>
-      <div class="col rule"><span></span></div>
-      <p class="col lede" aria-live="polite">Global private wealth management powered by immutable double-entry ledger architecture and sub-millisecond atomic settlement.</p>
-      <div class="col cta">
-        <button class="planet planet-l" type="button" data-slot="l">
-          <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
-        </button>
-        <button class="planet planet-r" type="button" data-slot="r">
-          <img data-planet="earth" alt="" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
-        </button>
-        <a href="#" data-action="register">GET STARTED</a>
-        <span class="label label-l"></span>
-        <span class="label label-r"></span>
+      <div class="hero-copy">
+      <div class="overline">A clearer world of money</div>
+      <h1 id="heroTitle">Your money.<span>A wider perspective.</span></h1>
+      <p>Different currencies. Meaningful goals. One place to bring it all together. Make room for what comes next, with Veyra.</p>
+      <div class="hero-cta"><a class="marketing-button" href="#" data-action="register">Make it yours <svg class="ic"><use href="#i-arrow"/></svg></a><button class="marketing-button outline" type="button" data-action="demo">Explore the demo</button></div>
       </div>
-    </div>
-
-    <nav class="pager" aria-label="Planets">
-      <button type="button" data-planet="earth" aria-label="Show EARTH"><span>EARTH</span><i></i></button>
-    </nav>
-  </div>
-
-  <button class="scroll" type="button" aria-label="Scroll to next section">
-    <svg viewBox="0 0 26 33" fill="none" aria-hidden="true">
-      <path d="M13 1.5 V31.5 M1.9 20.4 L13 31.5 L24.1 20.4" stroke="#ffffff" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
-    </svg>
-  </button>
+      <div class="hero-bottom"><span>Four currencies</span><span>One clear overview</span><span>Built around you</span></div>
+      <a class="hero-scroll" href="#discover">Discover Veyra <svg class="ic"><use href="#i-arrow"/></svg></a>
+      <button class="motion-control" type="button" id="heroMotion" aria-pressed="false" aria-label="Pause scene animation"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="motion-pause" d="M9 5v14M15 5v14"/><path class="motion-play" d="m9 5 10 7-10 7Z"/></svg><span>Pause motion</span></button>
+    </section>
+    <section class="marketing" id="discover" aria-labelledby="benefitsTitle">
+      <div class="marketing-intro"><div><p class="overline">Less noise. More possibility.</p><h2 id="benefitsTitle">A little more clarity.<br>A lot more control.</h2></div><p>Money should fit the way you live. Veyra brings the everyday details into focus, so you can keep your eyes on the bigger picture.</p></div>
+      <div class="benefits">
+        <article class="benefit"><small>01 / A GLOBAL OUTLOOK</small><svg class="ic"><use href="#i-globe"/></svg><h3>One home. Four currencies.</h3><p>Keep EUR, USD, GBP and TRY side by side. Switch between balances and review an exchange quote before you convert.</p></article>
+        <article class="benefit"><small>02 / ROOM FOR YOUR PLANS</small><svg class="ic"><use href="#i-target"/></svg><h3>Give your goals a space.</h3><p>A first adventure. A rainy day. Something entirely yours. Set a target, move money into a space and watch your progress.</p></article>
+        <article class="benefit"><small>03 / YOUR EVERYDAY, CONSIDERED</small><svg class="ic"><use href="#i-sliders"/></svg><h3>The details, on your terms.</h3><p>Follow your activity, understand your spending and tailor your workspace. Clear controls, without the clutter.</p></article>
+      </div>
+    </section>
+    <section class="marketing product-story" aria-labelledby="storyTitle">
+      <div><p class="overline">Meet your new perspective</p><h2 id="storyTitle">Everything in place.<br>Nothing in your way.</h2><p>An overview that feels calm from the moment you open it. Your balances, activity and savings, thoughtfully brought together.</p><button class="marketing-button outline" type="button" data-action="demo">Take a look inside <svg class="ic"><use href="#i-arrow"/></svg></button></div>
+      <div class="story-preview" aria-label="Illustrative Veyra account preview"><header><b>Veyra</b><span>Illustrative preview</span></header><p class="overline" style="margin-top:26px">Your available balance</p><div class="preview-balance">€4,280.00</div><div class="preview-currencies"><span>EUR</span><span>USD</span><span>GBP</span><span>TRY</span></div><div class="preview-row"><svg class="ic"><use href="#i-target"/></svg><span>Next adventure<small>Your space. Your pace.</small></span><b>€640.00</b></div><div class="preview-row"><svg class="ic"><use href="#i-coffee"/></svg><span>A little everyday<small>Everything, accounted for.</small></span><b>−€5.00</b></div></div>
+    </section>
+    <section class="marketing faq" aria-labelledby="faqTitle"><div><p class="overline">A few things to know</p><h2 id="faqTitle">Good questions.<br>Clear answers.</h2></div><div>
+      <details><summary>What can I do with Veyra?</summary><p>Manage four currency balances, transfer within the Veyra ledger, create savings spaces, review activity and customize your workspace. The demo lets you try these flows with sample money.</p></details>
+      <details><summary>How does the demo work?</summary><p>The demo runs in your browser with sample balances. No real money moves, and no bank account or payment card is issued. Demo changes are saved on this device.</p></details>
+      <details><summary>How do I create an account?</summary><p>Choose Get started, enter your details and verify your email with a six-digit code. Email delivery must be configured on the running service. Real accounts begin with zero balances.</p></details>
+      <details><summary>Can I make it feel like my own?</summary><p>Yes. Choose light or dark mode inside your workspace, set your preferred currency, personalize your profile and adjust your privacy and security preferences.</p></details>
+    </div></section>
+    <section class="marketing final-cta"><p class="overline">A fresh perspective starts here</p><h2>Make space for your next chapter.</h2><a class="marketing-button" href="#" data-action="register">Get started with Veyra <svg class="ic"><use href="#i-arrow"/></svg></a></section>
+  </main>
+  <footer><b>Veyra</b><span>Designed for a clearer view of your money.<br>Development preview. Banking and card issuance services are not connected.</span></footer>
 </div>
 
 <!-- =====================================================================
@@ -985,30 +661,24 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
     <button class="sheet-x" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
     <svg class="auth-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#fff"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#5fd0e1"/></svg>
     <h2 class="auth-h" id="signinTitle">Sign in to Veyra</h2>
-    <p class="auth-p">Access your private ledger, cards and treasury.</p>
+    <p class="auth-p">Your money, your spaces, your next chapter.</p>
     <form class="form" id="signinForm" novalidate>
       <label class="field"><span>Email</span>
         <input class="inp" type="email" id="siEmail" autocomplete="email" placeholder="you@company.com" required>
       </label>
       <label class="field">
         <span class="field-row"><span>Password</span><a href="#" data-action="forgot">Forgot password?</a></span>
-        <input class="inp" type="password" id="siPass" autocomplete="current-password" placeholder="Your password" required>
+        <div class="password-wrap"><input class="inp" type="password" id="siPass" autocomplete="current-password" placeholder="Your password" maxlength="128" required><button class="password-visibility" type="button" data-action="password-visibility" data-target="siPass" aria-pressed="false">Show</button></div>
       </label>
       <label class="field" id="siCodeField" hidden><span>Email verification code</span>
         <input class="inp" type="text" id="siCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code">
       </label>
+      <div class="auth-options"><label><input type="checkbox" id="siRemember"> Keep me signed in on this device</label></div>
       <p class="form-err" id="siErr" role="alert"></p>
       <button class="btn-white" type="submit" id="siBtn">Sign In</button>
     </form>
-    <div class="divider">or continue with</div>
-    <button class="btn-google" type="button" data-action="google">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-      <span>Continue with Google</span>
-    </button>
-    <button class="btn-google" type="button" data-action="apple" style="margin-top:10px">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.2 12.3c0-2.2 1.8-3.3 1.9-3.4-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.2-2.7.8-3.4.8s-1.8-.8-2.9-.8C7.9 7.1 6.3 8 5.5 9.4c-1.7 2.9-.4 7.3 1.2 9.6.8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-4ZM15 5.6c.6-.8 1.1-1.9 1-3-.9 0-2 .6-2.7 1.4-.6.7-1.2 1.9-1.1 2.9 1 .1 2.1-.5 2.8-1.3Z"/></svg>
-      <span>Continue with Apple</span>
-    </button>
+    <div class="divider">take a look around</div>
+    <button class="demo-button" type="button" data-action="demo">Explore with a demo account →</button>
     <p class="auth-foot">New to Veyra? <a href="#" data-action="to-register">Open an account</a></p>
   </div>
 </div>
@@ -1023,7 +693,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
     <div id="regStep1">
       <div class="steps" aria-hidden="true"><i class="on"></i><i></i></div>
       <h2 class="auth-h" id="regTitle">Open your Veyra account</h2>
-      <p class="auth-p">Multi-currency accounts, a titanium Veyra Black card and 24/7 transfers — in minutes.</p>
+      <p class="auth-p">One place for your currencies, activity and savings goals. Start with your details, then verify your email.</p>
       <form class="form" id="regForm" novalidate>
         <label class="field"><span>1 · Choose your primary settlement currency</span>
           <select class="inp" id="rgCurrency" required><option value="EUR">€ EUR · Euro</option><option value="TRY">₺ TRY · Türk Lirası</option><option value="USD">$ USD · US Dollar</option><option value="GBP">£ GBP · British Pound</option></select>
@@ -1038,11 +708,11 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
           <input class="inp" type="email" id="rgEmail" autocomplete="email" placeholder="you@company.com" required>
         </label>
         <label class="field"><span>Password</span>
-          <input class="inp" type="password" id="rgPass" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" required>
+          <div class="password-wrap"><input class="inp" type="password" id="rgPass" autocomplete="new-password" placeholder="At least 8 characters" minlength="8" maxlength="128" required><button class="password-visibility" type="button" data-action="password-visibility" data-target="rgPass" aria-pressed="false">Show</button></div><div class="password-strength" aria-hidden="true"><i id="strengthBar"></i></div><small class="strength-label" id="strengthLabel" aria-live="polite">Use at least 8 characters. A longer password is better.</small>
         </label>
         <p class="form-err" id="rgErr" role="alert"></p>
         <button class="btn-white" type="submit" id="rgBtn">Proceed</button>
-        <p class="fine">By proceeding you agree to Veyra's Terms and Privacy Policy. We'll email you a 6-digit code to verify your address.</p>
+        <p class="fine">We'll email you a 6-digit code to verify your address. This development service does not issue bank accounts or payment cards.</p>
       </form>
       <p class="auth-foot">Already a client? <a href="#" data-action="to-signin">Sign in</a></p>
     </div>
@@ -1090,42 +760,39 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
      ===================================================================== -->
 <div class="app" id="app" hidden>
   <div class="app-grain" aria-hidden="true"></div>
-  <header class="dbar">
-    <div class="dbar-in">
-      <a class="dlogo" href="#d-home" aria-label="Veyra home">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#0b0f19"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#3fb6c8"/></svg>
-        <span>Veyra</span>
-      </a>
-      <nav class="dnav" aria-label="Dashboard sections">
-        <a href="#d-home" aria-current="page">Home</a>
-        <a href="#d-card">Card</a>
-        <a href="#d-spaces">Spaces</a>
-        <a href="#d-activity">Activity</a>
-      </nav>
-      <div class="dbar-right">
-        <span class="mode-chip" id="modeChip" title=""><i></i><span id="modeText">Demo session</span></span>
-        <button class="theme-toggle" type="button" data-action="theme" aria-label="Switch color theme"><svg class="ic"><use href="#i-sun"/></svg></button>
-        <div class="who"><span class="avatar" id="uAvatar">EK</span><span class="who-txt"><b id="uName">Erdem Kaya</b><small id="uEmail">erdem@veyra.app</small></span></div>
-        <button class="btn-quiet" type="button" data-action="profile"><svg class="ic"><use href="#i-settings"/></svg><span>Settings</span></button>
-        <button class="btn-quiet" type="button" data-action="signout"><svg class="ic"><use href="#i-logout"/></svg><span>Sign out</span></button>
-      </div>
+  <header class="dbar"><div class="dbar-in">
+    <a class="dlogo" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="currentColor"/></svg><span>Veyra</span></a>
+    <p class="sidebar-label">Your workspace</p>
+    <nav class="dnav" aria-label="Dashboard sections">
+      <a href="#d-home" aria-current="page"><svg class="ic"><use href="#i-home"/></svg><span>Overview</span></a>
+      <a href="#d-activity"><svg class="ic"><use href="#i-transfer"/></svg><span>Activity</span></a>
+      <a href="#d-spaces"><svg class="ic"><use href="#i-target"/></svg><span>Spaces</span></a>
+      <a href="#d-card"><svg class="ic"><use href="#i-topup"/></svg><span>Card</span></a>
+      <a href="#m-profile" class="mobile-settings" data-action="settings"><svg class="ic"><use href="#i-settings"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="sidebar-link" type="button" data-action="settings"><svg class="ic"><use href="#i-settings"/></svg><span>Settings</span></button>
+      <button class="sidebar-link" type="button" data-action="signout"><svg class="ic"><use href="#i-logout"/></svg><span>Sign out</span></button>
+      <button class="who" type="button" data-action="profile" aria-label="Open your profile"><span class="avatar" id="uAvatar">V</span><span class="who-txt"><b id="uName">Your name</b><small id="uEmail">Your account</small></span></button>
     </div>
-  </header>
+  </div></header>
 
   <main class="dmain">
+    <div class="workspace-top"><a class="mobile-home" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="currentColor"/></svg><span>Veyra</span></a><span>Overview / Personal</span><div class="workspace-tools"><span class="mode-chip" id="modeChip"><i></i><span id="modeText">Demo workspace</span></span><button class="theme-toggle" type="button" data-action="theme" aria-label="Switch to light mode"><svg class="ic"><use href="#i-sun"/></svg></button><button class="btn-quiet" type="button" data-action="profile" aria-label="Open profile"><svg class="ic"><use href="#i-settings"/></svg><span>My profile</span></button></div></div>
     <section class="dhead" id="d-home" aria-labelledby="greetH">
       <div>
         <p class="greet-sm" id="greetSm">Good afternoon</p>
         <h2 class="greet-h" id="greetH">Erdem</h2>
-        <p class="total">Total across 4 currencies <b id="totalAll">€0.00</b></p>
+        <p class="total"><span id="totalCaption">Total across currencies · indicative</span> <b id="totalAll">€0.00</b></p>
       </div>
+      <div class="head-actions"><button class="btn-line" type="button" data-action="privacy" id="privacyButton" aria-label="Hide balances" aria-pressed="false"><svg class="ic"><use href="#i-eye"/></svg><span>Hide balances</span></button><button class="btn-line" type="button" data-action="refresh-data" aria-label="Refresh balances"><svg class="ic"><use href="#i-repeat"/></svg><span>Refresh</span></button></div>
     </section>
 
     <div class="cur-row" role="tablist" aria-label="Currency accounts" id="curRow">
-      <button class="cur" role="tab" data-cur="EUR" aria-selected="true"><span class="cur-sym">€</span><span class="cur-txt"><small>EUR · Euro</small><b data-bal="EUR">€450.00</b></span></button>
-      <button class="cur" role="tab" data-cur="USD" aria-selected="false"><span class="cur-sym">$</span><span class="cur-txt"><small>USD · US Dollar</small><b data-bal="USD">$1,250.00</b></span></button>
-      <button class="cur" role="tab" data-cur="TRY" aria-selected="false"><span class="cur-sym">₺</span><span class="cur-txt"><small>TRY · Turkish Lira</small><b data-bal="TRY">₺42,500.00</b></span></button>
-      <button class="cur" role="tab" data-cur="GBP" aria-selected="false"><span class="cur-sym">£</span><span class="cur-txt"><small>GBP · British Pound</small><b data-bal="GBP">£320.00</b></span></button>
+      <button class="cur" role="tab" data-cur="EUR" aria-selected="true"><span class="cur-sym">€</span><span class="cur-txt"><small data-code="EUR">EUR · Euro</small><b data-bal="EUR">€450.00</b></span></button>
+      <button class="cur" role="tab" data-cur="USD" aria-selected="false"><span class="cur-sym">$</span><span class="cur-txt"><small data-code="USD">USD · US Dollar</small><b data-bal="USD">$1,250.00</b></span></button>
+      <button class="cur" role="tab" data-cur="TRY" aria-selected="false"><span class="cur-sym">₺</span><span class="cur-txt"><small data-code="TRY">TRY · Turkish Lira</small><b data-bal="TRY">₺42,500.00</b></span></button>
+      <button class="cur" role="tab" data-cur="GBP" aria-selected="false"><span class="cur-sym">£</span><span class="cur-txt"><small data-code="GBP">GBP · British Pound</small><b data-bal="GBP">£320.00</b></span></button>
       <button class="btn-convert" type="button" data-action="convert"><svg class="ic"><use href="#i-swap"/></svg>Convert Currency</button>
     </div>
 
@@ -1191,6 +858,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
             </div>
           </div>
         </div>
+        <section class="security-note"><svg class="ic"><use href="#i-shield"/></svg><b>Your account, considered.</b><p id="securitySummary">Add an email verification code to your sign-in for another layer of protection.</p><button class="btn-line" type="button" data-action="security">Review security</button></section>
       </aside>
 
       <div class="stack">
@@ -1202,11 +870,17 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
           <div class="bal-amt" id="balAmt">€450<span>.00</span></div>
           <p class="bal-sub" id="balSub">Available now · held in Veyra Sovereign Ledger</p>
           <div class="actions">
-            <button class="act" type="button" data-action="send"><span class="act-ic"><svg class="ic"><use href="#i-send"/></svg></span><b>Send Money</b><small>FAST · 24/7</small></button>
+            <button class="act" type="button" data-action="send"><span class="act-ic"><svg class="ic"><use href="#i-send"/></svg></span><b>Send Money</b><small>Veyra transfers</small></button>
             <button class="act" type="button" data-action="topup"><span class="act-ic"><svg class="ic"><use href="#i-plus"/></svg></span><b>Add Money</b><small>Card top-up</small></button>
-            <button class="act" type="button" data-action="convert"><span class="act-ic"><svg class="ic"><use href="#i-swap"/></svg></span><b>Convert</b><small>Mid-market rate</small></button>
+            <button class="act" type="button" data-action="convert"><span class="act-ic"><svg class="ic"><use href="#i-swap"/></svg></span><b>Convert</b><small>Review a quote</small></button>
             <button class="act" type="button" data-action="goto-spaces"><span class="act-ic"><svg class="ic"><use href="#i-target"/></svg></span><b>Spaces</b><small>Savings goals</small></button>
           </div>
+        </section>
+
+        <section class="panel" id="d-insights" aria-labelledby="insightsH">
+          <div class="sec-head"><div><h3 class="sec-h" id="insightsH">Your month, at a glance</h3><p class="sec-p" id="insightsPeriod">Cash flow in your selected currency</p></div><button class="btn-line" type="button" data-action="budget-settings">Set budget</button></div>
+          <div class="insight-stats"><div><small>Money in</small><b id="monthIn">€0.00</b></div><div><small>Money out</small><b id="monthOut">€0.00</b></div><div><small>Net flow</small><b id="monthNet">€0.00</b></div></div>
+          <div class="budget-line"><span>Monthly spending budget</span><span id="budgetSummary">Not set</span></div><div class="bar" role="progressbar" id="budgetProgress" aria-label="Monthly budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="budgetBar"></i></div><p class="budget-help" id="budgetHelp">Set a monthly budget in Settings to follow your spending.</p>
         </section>
 
         <section class="panel" id="d-spaces" aria-labelledby="spacesH">
@@ -1219,17 +893,19 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 
         <section class="panel" id="d-activity" aria-labelledby="actH">
           <div class="sec-head">
-            <h3 class="sec-h" id="actH">Recent activity</h3>
+            <h3 class="sec-h" id="actH">Activity</h3>
             <div class="seg" role="group" aria-label="Filter activity">
               <button type="button" data-filter="all" aria-pressed="true">All</button>
               <button type="button" data-filter="cur" aria-pressed="false" id="filterCurBtn">EUR only</button>
             </div>
           </div>
+          <div class="activity-toolbar"><input type="search" id="activitySearch" aria-label="Search transactions" placeholder="Search transactions…"><select id="activityDirection" aria-label="Transaction direction"><option value="all">All types</option><option value="in">Money in</option><option value="out">Money out</option></select><select id="activityPeriod" aria-label="Transaction period"><option value="all">All time</option><option value="month">This month</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></div>
           <ul class="act-list" id="activityList"></ul>
-          <button class="more" type="button" id="activityMore" hidden>Show more</button>
+          <button class="more" type="button" id="activityMore" hidden>Show more</button><div class="activity-caption"><span id="activityCount" role="status">0 transactions</span><button class="linkbtn" type="button" data-action="export-csv">Export CSV ↗</button></div>
         </section>
       </div>
     </div>
+    <footer class="workspace-footer"><span>Veyra · A clearer view of your money.</span><span id="workspaceStatus">Demo workspace · Sample money only</span></footer>
   </main>
 
   <button class="fab" type="button" id="engineFab" data-action="engine" aria-haspopup="dialog"><svg class="ic"><use href="#i-bolt"/></svg>Engine Inspector</button>
@@ -1340,7 +1016,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
   <div class="sheet">
     <button class="sheet-x" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
     <h2 class="m-h" id="cvH">Convert currency</h2>
-    <p class="m-p">Real mid-market rate with one small, transparent fee.</p>
+    <p class="m-p" id="cvNote">Review your exchange before you confirm.</p>
     <form class="mform" id="cvF" novalidate>
       <div class="lf">
         <span class="lf-row"><span>You convert</span><small>Balance <b id="cvAvail">€0.00</b> · <button type="button" data-action="cv-max">Use all</button></small></span>
@@ -1358,12 +1034,12 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
         </div>
       </div>
       <div class="summary">
-        <div><span>Mid-market rate</span><b id="cvRate">—</b></div>
-        <div><span>Veyra fee (0.15%)</span><b id="cvFee">—</b></div>
+        <div><span>Review a quote</span><b id="cvRate">—</b></div>
+        <div><span id="cvFeeLabel">Veyra fee</span><b id="cvFee">—</b></div>
         <div><span>Arrives</span><b>Instantly</b></div>
       </div>
       <p class="form-err" id="cvErr" role="alert"></p>
-      <button class="btn-ink lg" type="submit">Convert now</button>
+      <button class="btn-ink lg" id="cvBtn" type="submit">Review quote</button>
     </form>
   </div>
 </div>
@@ -1432,1476 +1108,40 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 
 <div class="modal light" id="m-profile" role="dialog" aria-modal="true" aria-labelledby="profileH" hidden>
   <div class="sheet">
-    <button class="sheet-x" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
-    <h2 class="m-h" id="profileH">Profile &amp; security</h2>
-    <p class="m-p">The details that make Veyra yours.</p>
-    <form class="mform" id="profileF">
-      <label class="lf"><span>Profile photo</span><input class="li" id="profileAvatar" type="file" accept="image/png,image/jpeg,image/webp"></label>
-      <div class="chips" id="avatarPresets"><button type="button" data-avatar="sage">Sage</button><button type="button" data-avatar="sand">Sand</button><button type="button" data-avatar="slate">Slate</button><button type="button" data-avatar="rose">Rose</button></div>
-      <label class="eng-opt"><input type="checkbox" id="profile2fa"> Use a one-time email code after my password</label>
-      <label class="lf"><span>Current password (required for 2FA changes)</span><input class="li" id="profilePass" type="password" autocomplete="current-password"></label>
-      <label class="lf"><span>Email code (after the first save)</span><input class="li" id="profileCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label>
-      <p class="form-err" id="profileErr" role="alert"></p>
-      <button class="btn-ink lg" type="submit" id="profileSave">Save security settings</button>
-    </form>
-    <div class="divider">password &amp; sessions</div>
-    <form class="mform" id="passwordF">
-      <div class="grid2"><label class="lf"><span>Current password</span><input class="li" id="pwCurrent" type="password" autocomplete="current-password"></label><label class="lf"><span>New password</span><input class="li" id="pwNew" type="password" minlength="8" autocomplete="new-password"></label></div>
-      <p class="form-err" id="passwordErr" role="alert"></p>
-      <button class="btn-line" type="submit">Change password</button>
-      <button class="btn-line" type="button" data-action="revoke-sessions">Close all active sessions</button>
-    </form>
+    <button class="sheet-x" type="button" data-close aria-label="Close settings"><svg class="ic"><use href="#i-close"/></svg></button>
+    <h2 class="m-h" id="profileH">Make yourself at home.</h2><p class="m-p">Your profile, preferences and peace of mind.</p>
+    <div class="settings-tabs" role="tablist" aria-label="Settings sections"><button type="button" role="tab" data-settings-tab="personal" id="tab-personal" aria-controls="pane-personal" aria-selected="true">Profile</button><button type="button" role="tab" data-settings-tab="preferences" id="tab-preferences" aria-controls="pane-preferences" aria-selected="false" tabindex="-1">Preferences</button><button type="button" role="tab" data-settings-tab="security" id="tab-security" aria-controls="pane-security" aria-selected="false" tabindex="-1">Security</button></div>
+    <section class="settings-pane" id="pane-personal" role="tabpanel" aria-labelledby="tab-personal">
+      <div class="profile-summary"><span class="avatar" id="profilePreview">V</span><div><b id="profileDisplayName">Your name</b><p id="profileDisplayEmail"></p></div></div>
+      <form class="mform" id="personalF"><label class="lf"><span>Full name</span><input class="li" id="profileName" autocomplete="name" minlength="2" maxlength="100" required></label><label class="lf"><span>Email address · verified at registration</span><input class="li" id="profileEmail" type="email" readonly></label><label class="lf"><span>Profile photo · PNG, JPEG or WebP, up to 200 KB</span><input class="li" id="profileAvatar" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="chips" id="avatarPresets"><button type="button" data-avatar="slate">Use initials</button><button type="button" data-avatar="sage">V</button></div><p class="form-err" id="personalErr" role="alert"></p><button class="btn-ink lg" type="submit" id="personalSave">Save profile</button></form>
+      <p class="settings-note" id="profileMember"></p>
+    </section>
+    <section class="settings-pane" id="pane-preferences" role="tabpanel" aria-labelledby="tab-preferences" hidden>
+      <form id="preferencesF">
+        <label class="settings-row"><span>Appearance<small>A pure black or white workspace, with readable text everywhere.</small></span><select id="prefTheme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+        <label class="settings-row"><span>Preferred currency<small>Open your workspace with this currency selected.</small></span><select id="prefCurrency"><option>EUR</option><option>USD</option><option>GBP</option><option>TRY</option></select></label>
+        <label class="settings-row"><span>Hide balances<small>Keep balances and account identifiers out of view.</small></span><input type="checkbox" id="prefHide"></label>
+        <label class="settings-row"><span>Compact activity<small>A denser view for your transaction history.</small></span><input type="checkbox" id="prefCompact"></label>
+        <label class="settings-row"><span>Lock after inactivity<small>Sign out automatically when you leave your workspace idle.</small></span><select id="prefIdle"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
+        <label class="lf" style="margin-top:22px"><span id="budgetLabel">Monthly budget · EUR</span><input class="li" id="prefBudget" type="number" min="0" max="1000000" step="0.01" placeholder="0.00"><small class="settings-note">Set to zero to turn off the budget. The budget follows your preferred currency.</small></label>
+        <p class="form-err" id="preferencesErr" role="alert"></p><button class="btn-ink lg" type="submit" id="preferencesSave" style="margin-top:20px">Save preferences</button>
+      </form>
+    </section>
+    <section class="settings-pane" id="pane-security" role="tabpanel" aria-labelledby="tab-security" hidden>
+      <form class="mform" id="profileF"><label class="settings-row"><span>Two-step sign-in<small>Receive a one-time email code after entering your password.</small></span><input type="checkbox" id="profile2fa"></label><label class="lf"><span>Current password · required to change two-step sign-in</span><input class="li" id="profilePass" type="password" autocomplete="current-password" maxlength="128"></label><label class="lf" id="profileCodeField" hidden><span>Six-digit code sent to your email</span><input class="li" id="profileCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" pattern="[0-9]{6}"></label><p class="form-err" id="profileErr" role="alert"></p><button class="btn-ink lg" type="submit" id="profileSave">Save security settings</button></form>
+      <div class="divider">Change password</div>
+      <form class="mform" id="passwordF"><label class="lf"><span>Current password</span><input class="li" id="pwCurrent" type="password" autocomplete="current-password" maxlength="128" required></label><div class="grid2"><label class="lf"><span>New password</span><input class="li" id="pwNew" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label class="lf"><span>Confirm new password</span><input class="li" id="pwConfirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label></div><p class="form-err" id="passwordErr" role="alert"></p><button class="btn-line" type="submit" id="passwordSave">Change password</button></form>
+      <div class="session-card"><b>Current workspace</b><small id="sessionInfo"></small><small>Closing all sessions also signs out this device.</small></div><button class="btn-line" type="button" data-action="revoke-sessions">Sign out all devices</button>
+    </section>
+    <div style="margin-top:26px;border-top:1px solid var(--edge);padding-top:18px;display:flex;gap:10px;justify-content:space-between"><button class="btn-line" type="button" data-action="signout">Sign out</button><button class="btn-line" type="button" data-close>Done</button></div>
   </div>
 </div>
+<div class="modal dark" id="m-reset" role="dialog" aria-modal="true" aria-labelledby="resetTitle" hidden><div class="sheet"><button class="sheet-x" type="button" data-close aria-label="Close password reset"><svg class="ic"><use href="#i-close"/></svg></button><h2 class="auth-h" id="resetTitle">A fresh start.</h2><p class="auth-p">Enter your account email to request a password reset code.</p><form class="form" id="resetRequestF"><label class="field"><span>Email address</span><input class="inp" id="resetEmail" type="email" autocomplete="email" maxlength="255" required></label><button class="btn-white" type="submit" id="resetRequestBtn">Send reset code</button></form><form class="form" id="resetF" hidden><p class="fine" id="resetNotice"></p><label class="field"><span>Email code</span><input class="inp" id="resetCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><label class="field"><span>New password</span><input class="inp" id="resetPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label class="field"><span>Confirm new password</span><input class="inp" id="resetConfirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="btn-white" type="submit" id="resetBtn">Reset password</button><button class="demo-button" type="button" data-action="reset-again">Use a different email / request again</button></form><p class="form-err" id="resetErr" role="alert" style="margin-top:18px"></p></div></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><i></i><span id="toastMsg"></span></div>
 
-<script>
-(function(){
-'use strict';
+<script src="/static/hero-scene.js" defer></script>
+<script src="/static/app.js" defer></script>
 
-/* =====================================================================
-   0. HELPERS
-   ===================================================================== */
-var $=function(s,r){return (r||document).querySelector(s);};
-var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
-var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
-var reduceMotion=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-function uuid(){
-  if(window.crypto&&crypto.randomUUID) return crypto.randomUUID();
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);});
-}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-var SYM={EUR:'€',USD:'$',TRY:'₺',GBP:'£'};
-var CUR_NAME={EUR:'Euro',USD:'US Dollar',TRY:'Turkish Lira',GBP:'British Pound'};
-function money(v,c,plus){
-  var n=Math.round(v*100)/100;
-  var s=Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return (n<0?'-':(plus&&n>0?'+':''))+SYM[c]+s;
-}
-function parseAmt(v){
-  var s=String(v||'').trim().replace(/\s/g,'');
-  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s=s.replace(/\./g,'').replace(',','.');
-  else s=s.replace(/,/g, s.indexOf('.')>-1?'':'.');
-  var n=parseFloat(s);
-  return isFinite(n)?Math.round(n*100)/100:NaN;
-}
-function initials(name){
-  var p=String(name||'').trim().split(/\s+/).filter(Boolean);
-  return ((p[0]||'V')[0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();
-}
-function firstName(name){return String(name||'').trim().split(/\s+/)[0]||'there';}
-function groupIban(s){return String(s||'').replace(/\s+/g,'').toUpperCase().replace(/(.{4})/g,'$1 ').trim();}
-
-var toastTimer;
-function toast(msg,isErr){
-  var t=$('#toast');$('#toastMsg').textContent=msg;
-  t.classList.toggle('err',!!isErr);t.classList.add('is-on');
-  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('is-on');},3800);
-}
-function copyText(text){
-  if(navigator.clipboard&&window.isSecureContext!==false){
-    return navigator.clipboard.writeText(text).catch(function(){return fallbackCopy(text);});
-  }
-  return Promise.resolve(fallbackCopy(text));
-}
-function fallbackCopy(text){
-  var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');
-  ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');}catch(e){}
-  document.body.removeChild(ta);
-}
-function btnBusy(btn,busy,label){
-  if(!btn) return;
-  if(busy){btn.dataset.label=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span class="spin"></span><span>'+esc(label||'Please wait…')+'</span>';}
-  else{btn.disabled=false;if(btn.dataset.label!=null) btn.innerHTML=btn.dataset.label;}
-}
-
-/* =====================================================================
-   1. ENTRANCE DRIVER (runs once, then removes itself)
-   ===================================================================== */
-(function(){
-  var html=document.documentElement;
-  if(!html.classList.contains('anim')) return;
-  var started=false;
-  function go(){
-    if(started) return; started=true;
-    requestAnimationFrame(function(){requestAnimationFrame(function(){
-      html.classList.add('play');
-      setTimeout(function(){html.classList.remove('anim','play');},2150);
-    });});
-  }
-  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(go,go);
-  setTimeout(go,500);
-})();
-
-/* =====================================================================
-   2. EARTH HERO MOTION
-   ===================================================================== */
-var Hero=(function(){
-  var ORDER=['earth'];
-  var P={
-    earth:{name:'EARTH',
-      cut:'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png',
-      still:'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202133_508c64b8-a31e-4290-bdfc-1187df70e0a6.png',
-      lede:'Global private wealth management powered by immutable double-entry ledger architecture and sub-millisecond atomic settlement.'}
-  };
-  var sky=$('.sky'), clips=$$('.sky video'), lede=$('p.lede');
-  var slots={l:$('.planet-l'),r:$('.planet-r')}, labels={l:$('.label-l'),r:$('.label-r')};
-  var scrollBtn=$('.scroll');
-  var current=null, first=true, lockUntil=0, THROTTLE=700;
-
-  function clipFor(p){for(var i=0;i<clips.length;i++) if(clips[i].dataset.planet===p) return clips[i];return null;}
-
-  function show(next){
-    if(!P[next]||next===current) return false;
-    clips.forEach(function(v){
-      var on=v.dataset.planet===next;
-      if(on&&!v.getAttribute('src')&&v.dataset.src){v.preload='auto';v.src=v.dataset.src;}
-      v.classList.toggle('is-active',on);
-      if(on){var pr=v.play();if(pr&&pr.catch) pr.catch(function(){});}
-      else v.pause();
-    });
-    sky.style.backgroundImage='url("'+P[next].still+'")';
-    lede.innerHTML=P[next].lede;
-    if(!first&&!reduceMotion){lede.classList.remove('swap');void lede.offsetWidth;lede.classList.add('swap');}
-    var rest=ORDER.filter(function(p){return p!==next;});
-    [['l',rest[0]],['r',rest[1]]].forEach(function(pair){
-      var btn=slots[pair[0]], p=pair[1];
-      if(!p) return;
-      $$('img',btn).forEach(function(img){img.classList.toggle('is-shown',img.dataset.planet===p);});
-      btn.dataset.planet=p;
-      btn.setAttribute('aria-label','Show '+P[p].name);
-      labels[pair[0]].textContent=P[p].name;
-    });
-    $$('.pager button').forEach(function(b){b.setAttribute('aria-current',b.dataset.planet===next?'true':'false');});
-    $$('.links a[data-planet]').forEach(function(a){
-      if(a.dataset.planet===next) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
-    });
-    var atEnd=ORDER.indexOf(next)===ORDER.length-1;
-    scrollBtn.classList.toggle('is-end',atEnd);
-    scrollBtn.setAttribute('aria-label',atEnd?'Back to first planet':'Scroll to next planet');
-    current=next; first=false;
-    return true;
-  }
-
-  function warm(p){
-    var v=clipFor(p);
-    if(v&&!v.getAttribute('src')&&v.dataset.src){v.preload='auto';v.src=v.dataset.src;v.load();}
-  }
-
-  function blocked(){
-    return document.body.classList.contains('app-open')||Modals.isOpen()||
-      $('.navrow').dataset.open==='true';
-  }
-  function step(dir){
-    var now=Date.now();
-    if(now<lockUntil) return;
-    var i=ORDER.indexOf(current)+dir;
-    if(i<0||i>=ORDER.length) return;
-    lockUntil=now+THROTTLE;
-    show(ORDER[i]);
-  }
-  function go(p){lockUntil=Date.now()+THROTTLE;show(p);}
-
-  /* clicks on side slots */
-  Object.keys(slots).forEach(function(k){
-    var b=slots[k];
-    b.addEventListener('click',function(){go(this.dataset.planet);});
-    b.addEventListener('pointerenter',function(){warm(this.dataset.planet);});
-    b.addEventListener('focus',function(){warm(this.dataset.planet);});
-  });
-  $$('.pager button').forEach(function(b){
-    b.addEventListener('click',function(){go(b.dataset.planet);});
-    b.addEventListener('pointerenter',function(){warm(b.dataset.planet);});
-  });
-  scrollBtn.addEventListener('click',function(){
-    var i=ORDER.indexOf(current);
-    go(i>=ORDER.length-1?ORDER[0]:ORDER[i+1]);
-  });
-
-  /* mouse wheel / trackpad */
-  var acc=0, accTimer=null;
-  window.addEventListener('wheel',function(e){
-    if(blocked()) return;
-    if(Date.now()<lockUntil){acc=0;return;}
-    var dy=e.deltaY*(e.deltaMode===1?16:(e.deltaMode===2?window.innerHeight:1));
-    acc+=dy;
-    clearTimeout(accTimer);accTimer=setTimeout(function(){acc=0;},180);
-    if(Math.abs(acc)>=40){var d=acc>0?1:-1;acc=0;step(d);}
-  },{passive:true});
-
-  /* touch swipe */
-  var ty=null, tx=null;
-  var stage=$('#stage');
-  stage.addEventListener('touchstart',function(e){
-    if(e.touches.length!==1){ty=null;return;}
-    ty=e.touches[0].clientY;tx=e.touches[0].clientX;
-  },{passive:true});
-  stage.addEventListener('touchend',function(e){
-    if(ty==null||blocked()) return;
-    var t=e.changedTouches[0], dy=ty-t.clientY, dx=tx-t.clientX;
-    ty=null;
-    if(Math.abs(dy)>50&&Math.abs(dy)>Math.abs(dx)*1.2) step(dy>0?1:-1);
-  },{passive:true});
-
-  /* keyboard */
-  document.addEventListener('keydown',function(e){
-    if(blocked()||e.altKey||e.ctrlKey||e.metaKey) return;
-    var tag=(document.activeElement&&document.activeElement.tagName)||'';
-    if(/INPUT|TEXTAREA|SELECT/.test(tag)) return;
-    if(e.key==='ArrowDown'||e.key==='PageDown'||(e.key===' '&&tag!=='BUTTON'&&tag!=='A')){e.preventDefault();step(1);}
-    else if(e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();step(-1);}
-  });
-
-  /* pull remaining clips after first paint */
-  function warmAll(){ORDER.forEach(warm);}
-  window.addEventListener('load',function(){
-    if('requestIdleCallback' in window) requestIdleCallback(warmAll,{timeout:4000});
-    else setTimeout(warmAll,2500);
-  });
-
-  function pause(){clips.forEach(function(v){v.pause();});}
-  function resume(){var v=clipFor(current);if(v&&v.getAttribute('src')){var pr=v.play();if(pr&&pr.catch) pr.catch(function(){});}}
-
-  show('earth');
-  return {show:go,pause:pause,resume:resume,current:function(){return current;}};
-})();
-
-/* =====================================================================
-   3. BURGER MENU
-   ===================================================================== */
-var Burger=(function(){
-  var row=$('.navrow'), btn=$('.burger'), menu=$('#site-nav');
-  function set(open){
-    row.dataset.open=open?'true':'false';
-    btn.setAttribute('aria-expanded',open?'true':'false');
-    btn.setAttribute('aria-label',open?'Close navigation':'Open navigation');
-  }
-  set(false);
-  btn.addEventListener('click',function(e){e.stopPropagation();set(row.dataset.open!=='true');});
-  document.addEventListener('click',function(e){
-    if(row.dataset.open==='true'&&!menu.contains(e.target)&&!btn.contains(e.target)) set(false);
-  });
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'&&row.dataset.open==='true'){set(false);btn.focus();}
-  });
-  menu.addEventListener('click',function(e){if(e.target.closest('a')) set(false);});
-  return {set:set};
-})();
-
-/* =====================================================================
-   4. MODALS
-   ===================================================================== */
-var Modals={
-  stack:[],
-  isOpen:function(){return this.stack.length>0;},
-  open:function(id){
-    var el=document.getElementById(id); if(!el) return;
-    if(this.stack.some(function(s){return s.el===el;})) return;
-    this.stack.push({el:el,ret:document.activeElement});
-    el.hidden=false;
-    requestAnimationFrame(function(){el.classList.add('is-open');});
-    setTimeout(function(){
-      var f=el.querySelector('[data-autofocus]')||el.querySelector('input:not([type=hidden]):not([readonly]):not([type=radio]):not([type=range]),select,textarea');
-      if(f&&f.offsetParent!==null) f.focus();
-    },80);
-  },
-  close:function(id){
-    var el=id?document.getElementById(id):(this.stack.length?this.stack[this.stack.length-1].el:null);
-    if(!el) return;
-    var idx=-1;this.stack.forEach(function(s,i){if(s.el===el) idx=i;});
-    var entry=idx>-1?this.stack.splice(idx,1)[0]:null;
-    el.classList.remove('is-open');
-    setTimeout(function(){el.hidden=true;},230);
-    if(el.id==='m-register') Otp.teardown();
-    if(entry&&entry.ret&&entry.ret.focus&&document.body.contains(entry.ret)) setTimeout(function(){entry.ret.focus();},10);
-  }
-};
-$$('.modal').forEach(function(m){
-  m.addEventListener('mousedown',function(e){if(e.target===m) Modals.close(m.id);});
-  $$('[data-close]',m).forEach(function(b){b.addEventListener('click',function(){Modals.close(m.id);});});
-});
-document.addEventListener('keydown',function(e){
-  if(e.key!=='Escape') return;
-  if(Modals.isOpen()){e.preventDefault();Modals.close();return;}
-  if(Drawer.isOpen()){e.preventDefault();Drawer.close();}
-});
-
-/* =====================================================================
-   5. API + SESSION
-   ===================================================================== */
-var API_AVAILABLE=/^https?:$/.test(location.protocol);
-async function api(path,opts){
-  opts=opts||{};
-  if(!API_AVAILABLE) return {offline:true};
-  var headers={'Accept':'application/json'};
-  if(opts.body) headers['Content-Type']='application/json';
-  if(opts.auth!==false&&Session.mode==='live'&&Session.token) headers['Authorization']='Bearer '+Session.token;
-  var t0=performance.now();
-  try{
-    var res=await fetch(path,{method:opts.method||'GET',headers:headers,body:opts.body?JSON.stringify(opts.body):undefined});
-    var ms=performance.now()-t0;
-    var ct=res.headers.get('content-type')||'';
-    if(ct.indexOf('application/json')===-1) return {offline:true,status:res.status};
-    var data=await res.json();
-    return {ok:res.ok,status:res.status,data:data,ms:ms,serverMs:parseFloat(res.headers.get('X-Process-Time-Ms'))||null};
-  }catch(err){return {offline:true,error:err};}
-}
-function apiErr(r){
-  var d=r&&r.data&&r.data.detail;
-  if(Array.isArray(d)) return d.map(function(x){return x.msg;}).join(' · ');
-  return d||'Something went wrong. Please try again.';
-}
-
-var Session={
-  token:null,mode:null,user:null,
-  load:function(){
-    try{
-      this.token=localStorage.getItem('veyra_token');
-      this.mode=localStorage.getItem('veyra_mode');
-      this.user=JSON.parse(localStorage.getItem('veyra_user')||'null');
-    }catch(e){}
-    return !!(this.token&&this.user);
-  },
-  start:function(token,mode,user){
-    this.token=token;this.mode=mode;this.user=user;
-    try{
-      localStorage.setItem('veyra_token',token);
-      localStorage.setItem('veyra_mode',mode);
-      localStorage.setItem('veyra_user',JSON.stringify(user));
-    }catch(e){}
-    updateNavForSession();
-  },
-  clear:function(){
-    this.token=this.mode=this.user=null;
-    try{['veyra_token','veyra_mode','veyra_user'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
-    updateNavForSession();
-  }
-};
-function b64url(obj){return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');}
-function demoJwt(user){
-  var now=Math.floor(Date.now()/1000);
-  return b64url({alg:'none',typ:'JWT'})+'.'+b64url({sub:'demo',email:user.email,name:user.full_name,iat:now,exp:now+3600,iss:'veyra-demo'})+'.';
-}
-function updateNavForSession(){
-  var a=$('#navSignIn');
-  a.textContent=Session.token?'My Ledger':'Sign In';
-}
-
-function toggleTheme(){
-  var next=document.documentElement.dataset.theme==='light'?'dark':'light';
-  document.documentElement.dataset.theme=next;
-  try{localStorage.setItem('veyra-theme',next);}catch(e){}
-  $$('.theme-toggle').forEach(function(b){b.setAttribute('aria-label',next==='light'?'Switch to dark mode':'Switch to light mode');});
-  var meta=document.querySelector('meta[name="theme-color"]');if(meta) meta.content=next==='light'?'#edf6f7':'#04101f';
-}
-
-/* =====================================================================
-   6. AUTH FLOWS
-   ===================================================================== */
-function openSignIn(){
-  if(Session.token){App.open();return;}
-  $('#siErr').textContent='';
-  $('#siCode').value='';$('#siCodeField').hidden=true;
-  Modals.open('m-signin');
-}
-function openRegister(){
-  if(Session.token){App.open();return;}
-  showRegStep(1);$('#rgErr').textContent='';
-  Modals.open('m-register');
-}
-function showRegStep(n){
-  $('#regStep1').hidden=n!==1;
-  $('#regStep2').hidden=n!==2;
-}
-var EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-$('#signinForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var email=$('#siEmail').value.trim().toLowerCase(), pass=$('#siPass').value, err=$('#siErr'), btn=$('#siBtn');
-  err.textContent='';
-  if(!EMAIL_RE.test(email)){err.textContent='Enter a valid email address.';$('#siEmail').focus();return;}
-  if(!pass){err.textContent='Enter your password.';$('#siPass').focus();return;}
-  btnBusy(btn,true,'Signing in…');
-  var r=await api('/auth/login',{method:'POST',auth:false,body:{email:email,password:pass,code:$('#siCode').value||null}});
-  if(r.offline){
-    var nm=email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
-    Session.start(demoJwt({email:email,full_name:nm}),'demo',{id:0,email:email,full_name:nm});
-    btnBusy(btn,false);Modals.close('m-signin');App.open();
-    toast('Ledger API not reachable — opened a local demo session.');
-    return;
-  }
-  if(r.status===428){btnBusy(btn,false);$('#siCodeField').hidden=false;$('#siCode').focus();err.textContent='A 6-digit code was sent to your email. Enter it to finish signing in.';return;}
-  if(!r.ok){btnBusy(btn,false);err.textContent=apiErr(r);return;}
-  Session.token=r.data.access_token;Session.mode='live';
-  var me=await api('/auth/me');
-  btnBusy(btn,false);
-  if(!me.ok){err.textContent=apiErr(me);Session.token=null;Session.mode=null;return;}
-  Session.start(r.data.access_token,'live',me.data);
-  Modals.close('m-signin');App.open();
-  toast('Welcome back, '+firstName(me.data.full_name)+'.');
-});
-
-function googleSignIn(btn){
-  if(btn.disabled) return;
-  var html=btn.innerHTML;btn.disabled=true;
-  btn.innerHTML='<span class="spin"></span><span>Connecting to Google…</span>';
-  setTimeout(function(){
-    btn.disabled=false;btn.innerHTML=html;
-    var user={id:0,email:'erdem.kaya.test@gmail.com',full_name:'Erdem Kaya'};
-    Session.start(demoJwt(user),'demo',user);
-    Modals.close('m-signin');Modals.close('m-register');App.open();
-    toast('Signed in with Google (test account).');
-  },850);
-}
-
-var Otp={
-  email:null,name:null,password:null,currency:'EUR',purpose:'Personal Daily Banking',code:null,mode:null,expires:0,timer:null,resendAt:0,
-  teardown:function(){clearInterval(this.timer);this.timer=null;Mail.hide();},
-  startTimers:function(){
-    var self=this;clearInterval(this.timer);
-    function tick(){
-      var left=Math.max(0,self.expires-Date.now()), m=Math.floor(left/60000), s=Math.floor(left%60000/1000);
-      $('#otpTimer').textContent=left>0?('Code expires in '+m+':'+(s<10?'0':'')+s):'Code expired — request a new one';
-      var wait=Math.max(0,Math.ceil((self.resendAt-Date.now())/1000));
-      var rb=$('#otpResend');rb.disabled=wait>0;rb.textContent=wait>0?('Resend in '+wait+'s'):'Resend code';
-    }
-    tick();this.timer=setInterval(tick,1000);
-  }
-};
-async function sendOtp(){
-  var r=await api('/auth/otp/send',{method:'POST',auth:false,body:{email:Otp.email}});
-  if(r.offline){
-    Otp.mode='demo';
-    Otp.code=String(Math.floor(100000+Math.random()*900000));
-  }else if(!r.ok){
-    return apiErr(r);
-  }else{
-    Otp.mode='live';Otp.code=r.data.dev_otp||null;
-  }
-  Otp.expires=Date.now()+600000;Otp.resendAt=Date.now()+30000;
-  return null;
-}
-$('#regForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var name=$('#rgName').value.trim(), email=$('#rgEmail').value.trim().toLowerCase(), pass=$('#rgPass').value;
-  var err=$('#rgErr'), btn=$('#rgBtn');err.textContent='';
-  if(name.length<2){err.textContent='Enter your full name.';$('#rgName').focus();return;}
-  if(!EMAIL_RE.test(email)){err.textContent='Enter a valid email address.';$('#rgEmail').focus();return;}
-  if(pass.length<8){err.textContent='Password must be at least 8 characters.';$('#rgPass').focus();return;}
-  Otp.name=name;Otp.email=email;Otp.password=pass;
-  Otp.currency=$('#rgCurrency').value;Otp.purpose=$('#rgPurpose').value;
-  btnBusy(btn,true,'Sending code…');
-  var problem=await sendOtp();
-  btnBusy(btn,false);
-  if(problem){err.textContent=problem;return;}
-  $('#otpEmail').textContent=email;
-  clearOtpBoxes();$('#otpErr').textContent='';
-  showRegStep(2);
-  Otp.startTimers();
-  if(Otp.code) setTimeout(function(){Mail.show(Otp.code);},500);
-  toast('Verification code sent to '+email);
-  setTimeout(function(){otpBoxes[0].focus();},60);
-});
-
-var otpBoxes=$$('#otpBoxes input');
-function clearOtpBoxes(){otpBoxes.forEach(function(b){b.value='';b.classList.remove('filled');});}
-function fillOtp(str,from){
-  var d=String(str).replace(/\D/g,'').split('');
-  var i=from||0;
-  d.forEach(function(ch){if(i<6){otpBoxes[i].value=ch;otpBoxes[i].classList.add('filled');i++;}});
-  var next=Math.min(i,5);otpBoxes[next].focus();
-  if(otpBoxes.every(function(b){return b.value;})) verifyOtp();
-}
-otpBoxes.forEach(function(box,idx){
-  box.addEventListener('input',function(){
-    var v=box.value.replace(/\D/g,'');
-    if(v.length>1){box.value='';fillOtp(v,idx);return;}
-    box.value=v;box.classList.toggle('filled',!!v);
-    $('#otpErr').textContent='';
-    if(v&&idx<5) otpBoxes[idx+1].focus();
-    if(otpBoxes.every(function(b){return b.value;})) verifyOtp();
-  });
-  box.addEventListener('keydown',function(e){
-    if(e.key==='Backspace'&&!box.value&&idx>0){otpBoxes[idx-1].value='';otpBoxes[idx-1].classList.remove('filled');otpBoxes[idx-1].focus();e.preventDefault();}
-    else if(e.key==='ArrowLeft'&&idx>0){otpBoxes[idx-1].focus();e.preventDefault();}
-    else if(e.key==='ArrowRight'&&idx<5){otpBoxes[idx+1].focus();e.preventDefault();}
-    else if(e.key==='Enter'){verifyOtp();}
-  });
-  box.addEventListener('focus',function(){box.select();});
-  box.addEventListener('paste',function(e){
-    e.preventDefault();
-    var t=(e.clipboardData||window.clipboardData).getData('text');
-    clearOtpBoxes();fillOtp(t,0);
-  });
-});
-var verifying=false;
-async function verifyOtp(){
-  if(verifying) return;
-  var code=otpBoxes.map(function(b){return b.value;}).join(''), err=$('#otpErr'), btn=$('#otpBtn');
-  if(code.length<6){err.textContent='Enter all 6 digits.';return;}
-  function fail(msg){
-    err.textContent=msg;var g=$('#otpBoxes');g.classList.remove('shake');void g.offsetWidth;g.classList.add('shake');
-    clearOtpBoxes();otpBoxes[0].focus();
-  }
-  verifying=true;btnBusy(btn,true,'Verifying…');
-  try{
-    if(Otp.mode==='live'){
-      var r=await api('/auth/otp/verify',{method:'POST',auth:false,body:{email:Otp.email,code:code,password:Otp.password,full_name:Otp.name,primary_currency:Otp.currency,purpose:Otp.purpose}});
-      if(r.offline){fail('Lost connection to the ledger. Try again.');return;}
-      if(!r.ok){fail(apiErr(r));return;}
-      Session.start(r.data.access_token,'live',r.data.user);
-    }else{
-      if(Date.now()>Otp.expires){fail('This code has expired. Request a new one.');return;}
-      if(code!==Otp.code){fail('That code doesn\'t match. Check the email and try again.');return;}
-      var user={id:0,email:Otp.email,full_name:Otp.name};
-      Session.start(demoJwt(user),'demo',user);
-    }
-    Otp.password=null;
-    Modals.close('m-register');
-    App.open();
-    toast('Email verified — welcome to Veyra, '+firstName(Session.user.full_name)+'.');
-  }finally{verifying=false;btnBusy(btn,false);}
-}
-
-var Mail={
-  show:function(code){
-    var m=$('#mailCard');$('#mailCode').textContent=code;m.hidden=false;
-    requestAnimationFrame(function(){m.classList.add('is-on');});
-  },
-  hide:function(){
-    var m=$('#mailCard');if(m.hidden) return;
-    m.classList.remove('is-on');setTimeout(function(){m.hidden=true;},320);
-  }
-};
-
-/* =====================================================================
-   7. BANKING STATE
-   ===================================================================== */
-var RATES={EUR:1,USD:1.0842,TRY:37.18,GBP:0.8436};
-function rate(from,to){return RATES[to]/RATES[from];}
-function toCur(v,from,to){return v*rate(from,to);}
-
-var DEMO_IBAN={
-  EUR:'CH93 0076 2011 6238 5295 7',
-  USD:'Account 8310 4471 2094 · ACH routing 026073150',
-  TRY:'TR36 0006 7010 0000 0098 7654 32',
-  GBP:'GB35 VEYR 0400 0444 9201 94'
-};
-var RECIPIENTS=[
-  {name:'Selin Kaya',iban:'TR700006701000000098123456',bank:'Yapı Kredi'},
-  {name:'Emre Vural',iban:'TR660006200000123456789012',bank:'Garanti BBVA'},
-  {name:'Zeynep Aksoy',iban:'TR930006400019876543210044',bank:'İş Bankası'},
-  {name:'Canberk Aydın',iban:'TR630004600088776655443322',bank:'Akbank'},
-  {name:'Lena Hoffmann',iban:'DE89370400440532013000',bank:'Commerzbank'}
-];
-var TR_BANKS={'00010':'Ziraat Bankası','00012':'Halkbank','00015':'VakıfBank','00032':'TEB','00046':'Akbank','00062':'Garanti BBVA','00064':'İş Bankası','00067':'Yapı Kredi','00111':'QNB','00134':'Denizbank'};
-var IBAN_LEN={TR:26,DE:22,CH:21,GB:22,FR:27,NL:18,ES:24,IT:27,BE:16,AT:20,LU:20,IE:22};
-var DIRECTORY_NAMES=['Mert Yıldız','Ayşe Demir','Can Öztürk','Elif Şahin','Burak Koç','Deniz Arslan','Ece Kılıç','Kerem Aydın'];
-
-function ago(days,h,m){var d=new Date();d.setDate(d.getDate()-days);d.setHours(h,m,0,0);return d.getTime();}
-function defaultState(){
-  return {
-    v:2,
-    wallets:{EUR:450,USD:1250,TRY:42500,GBP:320},
-    active:'EUR',
-    liveOffset:0,
-    card:{frozen:false,online:true,limits:{daily:2500,nfc:50,atm:1000}},
-    spaces:[
-      {id:'s1',name:'Yaz Tatili',goal:2000,saved:640,cur:'EUR',icon:'sun'},
-      {id:'s2',name:'Acil Durum Fonu',goal:5000,saved:1850,cur:'EUR',icon:'shield'}
-    ],
-    activity:[
-      {id:'a1',t:ago(0,9,12),title:'Card Top-Up',sub:'Mastercard •• 9010',cat:'topup',amt:100,cur:'EUR'},
-      {id:'a2',t:ago(0,8,41),title:'Blue Bottle Coffee',sub:'Card payment · Berlin',cat:'coffee',amt:-5,cur:'EUR'},
-      {id:'a3',t:ago(1,18,20),title:'Transfer to #2',sub:'Selin Kaya · FAST',cat:'transfer',amt:-100,cur:'EUR'},
-      {id:'a4',t:ago(1,12,5),title:'Migros',sub:'Groceries · İstanbul',cat:'grocery',amt:-842.5,cur:'TRY'},
-      {id:'a5',t:ago(2,16,30),title:'Converted USD to EUR',sub:'$250.00 at 0.9223',cat:'fx',amt:230.58,cur:'EUR'},
-      {id:'a6',t:ago(3,9,0),title:'Salary',sub:'Veyra Holdings A.Ş.',cat:'salary',amt:38000,cur:'TRY'},
-      {id:'a7',t:ago(4,20,15),title:'Spotify Premium',sub:'Subscription',cat:'sub',amt:-10.99,cur:'GBP'},
-      {id:'a8',t:ago(5,13,40),title:'Whole Foods Market',sub:'Groceries · New York',cat:'grocery',amt:-64.2,cur:'USD'}
-    ],
-    liveLabels:{}
-  };
-}
-var S=defaultState();
-var Live={accounts:[],primary:null,entries:[]};
-function stateKey(){return 'veyra_state_v2:'+((Session.user&&Session.user.email)||'guest');}
-function loadState(){
-  try{var raw=localStorage.getItem(stateKey());S=raw?JSON.parse(raw):defaultState();if(!S||S.v!==2) S=defaultState();}
-  catch(e){S=defaultState();}
-}
-function saveState(){try{localStorage.setItem(stateKey(),JSON.stringify(S));}catch(e){}}
-function isLive(){return Session.mode==='live'&&!!Live.primary;}
-function adjust(cur,delta){
-  S.wallets[cur]=Math.round((S.wallets[cur]+delta)*100)/100;
-  if(cur==='EUR'&&isLive()) S.liveOffset=Math.round((S.liveOffset+delta)*100)/100;
-}
-function logActivity(a){
-  a.id='l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  a.t=a.t||Date.now();
-  S.activity.unshift(a);
-  if(S.activity.length>80) S.activity.length=80;
-}
-function ibanFor(cur){
-  var live=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===cur;});
-  if(live) return groupIban(live.account_number);
-  return DEMO_IBAN[cur];
-}
-
-/* =====================================================================
-   8. DASHBOARD RENDERING
-   ===================================================================== */
-var ICON_FOR={transfer:'i-transfer',coffee:'i-coffee',grocery:'i-cart',salary:'i-salary',topup:'i-topup',fx:'i-swap',space:'i-target',sub:'i-repeat',engine:'i-bolt'};
-var SPACE_ICON={sun:'i-sun',shield:'i-shield',home:'i-home',car:'i-car'};
-var activityFilter='all', activityLimit=8;
-
-function greeting(){var h=new Date().getHours();return h<5?'Good evening':h<12?'Good morning':h<18?'Good afternoon':'Good evening';}
-
-function renderAll(){
-  renderHeader();renderCurrencies();renderBalance();renderCard();renderSpaces();renderActivity();
-}
-function renderHeader(){
-  var u=Session.user||{full_name:'Guest',email:''};
-  $('#uName').textContent=u.full_name;$('#uEmail').textContent=u.email;$('#uAvatar').textContent=initials(u.full_name);
-  $('#greetSm').textContent=greeting();$('#greetH').textContent=firstName(u.full_name);
-  var live=Session.mode==='live';
-  $('#modeChip').classList.toggle('live',live);
-  $('#modeText').textContent=live?'Live · FastAPI ledger':'Demo session';
-  $('#modeChip').title=live?'Connected to the FastAPI / PostgreSQL backend':'Running locally in your browser — no backend';
-  var total=0;Object.keys(S.wallets).forEach(function(c){total+=toCur(S.wallets[c],c,S.active);});
-  $('#totalAll').textContent='≈ '+money(total,S.active);
-}
-function renderCurrencies(){
-  $$('#curRow .cur').forEach(function(b){
-    var c=b.dataset.cur;
-    b.setAttribute('aria-selected',c===S.active?'true':'false');
-    b.tabIndex=c===S.active?0:-1;
-    $('[data-bal]',b).textContent=money(S.wallets[c],c);
-  });
-}
-function renderBalance(){
-  var c=S.active, v=S.wallets[c], s=money(v,c), dot=s.lastIndexOf('.');
-  $('#balLabel').textContent=c+' balance';
-  $('#balAmt').innerHTML=esc(s.slice(0,dot))+'<span>'+esc(s.slice(dot))+'</span>';
-  var liveEur=c==='EUR'&&isLive();
-  $('#balTag').hidden=!liveEur;
-  $('#balSub').textContent=liveEur?('Account #'+Live.primary.id+' · synced with PostgreSQL ledger'):(CUR_NAME[c]+' account · available now');
-  $('#acctLabel').textContent=(c==='USD'?'Account details':'IBAN')+' · '+c+' account';
-  $('#acctIban').textContent=ibanFor(c);
-  $('#acctHolder').textContent=(Session.user&&Session.user.full_name)||'—';
-  $('#acctId').textContent=isLive()?('#'+Live.primary.id):'Demo';
-  $('#filterCurBtn').textContent=c+' only';
-}
-function renderCard(){
-  var vc=$('#vcard');
-  vc.classList.toggle('is-frozen',S.card.frozen);
-  $('#cardBal').textContent=money(S.wallets[S.active],S.active);
-  $('#cardName').textContent=((Session.user&&Session.user.full_name)||'VEYRA CLIENT').toUpperCase();
-  $('#cardIban').textContent=ibanFor('EUR');
-  var f=$('#ctlFreeze');f.setAttribute('aria-pressed',S.card.frozen?'true':'false');
-  $('#ctlFreezeSt').textContent=S.card.frozen?'Frozen — tap to unfreeze':'Card is active';
-  var o=$('#ctlOnline');o.setAttribute('aria-pressed',S.card.online?'true':'false');
-  $('#ctlOnlineSt').textContent=S.card.online?'Allowed':'Blocked';
-  var flipped=vc.classList.contains('is-flipped');
-  $('#ctlDetails').setAttribute('aria-pressed',flipped?'true':'false');
-  $('#ctlDetailsSt').textContent=flipped?'Hide details':'Show CVV & expiry';
-  $('#vback').setAttribute('aria-hidden',flipped?'false':'true');
-  $('#ctlLimitsSt').textContent=money(S.card.limits.daily,'EUR').replace('.00','')+' / day';
-}
-function renderSpaces(){
-  var list=$('#spacesList');
-  list.innerHTML=S.spaces.map(function(sp){
-    var pct=sp.goal>0?Math.min(100,Math.round(sp.saved/sp.goal*100)):0;
-    return '<article class="space">'+
-      '<div class="space-top"><span class="space-ic"><svg class="ic"><use href="#'+(SPACE_ICON[sp.icon]||'i-target')+'"/></svg></span>'+
-      '<div><b>'+esc(sp.name)+'</b><small>'+pct+'% of '+esc(money(sp.goal,sp.cur))+'</small></div></div>'+
-      '<div class="space-amt">'+esc(money(sp.saved,sp.cur))+'</div>'+
-      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'" aria-label="'+esc(sp.name)+' progress"><i style="width:'+pct+'%"></i></div>'+
-      '<div class="space-btns"><button class="add" type="button" data-action="space-move" data-id="'+sp.id+'" data-dir="add">Add</button>'+
-      '<button class="wd" type="button" data-action="space-move" data-id="'+sp.id+'" data-dir="withdraw">Withdraw</button></div>'+
-    '</article>';
-  }).join('')+
-  '<button class="space space-new" type="button" data-action="new-space"><svg class="ic"><use href="#i-plus"/></svg>Create a space</button>';
-}
-function liveActivity(){
-  return Live.entries.map(function(en){
-    var debit=String(en.entry_type).toUpperCase()==='DEBIT';
-    var label=S.liveLabels[en.transaction_id];
-    return {id:'e'+en.id,t:new Date(en.created_at).getTime(),
-      title:label||(debit?'Transfer sent':'Money received'),
-      sub:'Veyra transfer · settled on ledger',cat:label&&label.indexOf('Engine')===0?'engine':'transfer',
-      amt:(debit?-1:1)*en.amount/100,cur:'EUR',live:true};
-  });
-}
-function dayLabel(t){
-  var d=new Date(t), today=new Date();today.setHours(0,0,0,0);
-  var diff=Math.round((today-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
-  if(diff===0) return 'Today';
-  if(diff===1) return 'Yesterday';
-  return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-}
-function renderActivity(){
-  var items=S.activity.concat(isLive()?liveActivity():[]);
-  if(activityFilter==='cur') items=items.filter(function(a){return a.cur===S.active;});
-  items.sort(function(a,b){return b.t-a.t;});
-  var shown=items.slice(0,activityLimit), html='', lastDay='';
-  if(!shown.length) html='<li class="empty">No activity yet in this view.</li>';
-  shown.forEach(function(a){
-    var day=dayLabel(a.t);
-    if(day!==lastDay){html+='<li class="act-day">'+esc(day)+'</li>';lastDay=day;}
-    var time=new Date(a.t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    html+='<li class="tx"><span class="tx-ic"><svg class="ic"><use href="#'+(ICON_FOR[a.cat]||'i-transfer')+'"/></svg></span>'+
-      '<span class="tx-txt"><b>'+esc(a.title)+'</b><small>'+esc(a.sub)+'</small></span>'+
-      '<span class="tx-amt"><b class="'+(a.amt>0?'pos':'')+'">'+esc(money(a.amt,a.cur,true))+'</b><small>'+time+(a.live?' · Live':'')+'</small></span></li>';
-  });
-  $('#activityList').innerHTML=html;
-  $('#activityMore').hidden=items.length<=activityLimit;
-}
-function refresh(){saveState();renderAll();}
-
-/* =====================================================================
-   9. APP OPEN / CLOSE + LIVE SYNC
-   ===================================================================== */
-var App={
-  open:function(){
-    loadState();
-    var app=$('#app');app.hidden=false;
-    document.body.classList.add('app-open');
-    Burger.set(false);Mail.hide();Hero.pause();
-    renderAll();
-    requestAnimationFrame(function(){app.classList.add('is-in');});
-    app.scrollTop=0;
-    if(Session.mode==='live') syncLive();
-    else{Live.accounts=[];Live.primary=null;Live.entries=[];}
-  },
-  close:function(){
-    var app=$('#app');app.classList.remove('is-in');Drawer.close();
-    setTimeout(function(){app.hidden=true;},350);
-    document.body.classList.remove('app-open');Hero.resume();
-  }
-};
-async function syncLive(){
-  var me=await api('/auth/me');
-  if(me.offline){toast('Ledger API unreachable — showing your last known state.',true);return;}
-  if(!me.ok){
-    if(me.status===401){Session.clear();App.close();toast('Your session expired. Please sign in again.',true);}
-    return;
-  }
-  Session.user=me.data;try{localStorage.setItem('veyra_user',JSON.stringify(me.data));}catch(e){}
-  var remoteSettings=me.data.settings||{};
-  if(typeof remoteSettings.card_frozen==='boolean')S.card.frozen=remoteSettings.card_frozen;
-  if(typeof remoteSettings.online_payments==='boolean')S.card.online=remoteSettings.online_payments;
-  if(typeof remoteSettings.contactless_limit==='number')S.card.limits.nfc=remoteSettings.contactless_limit/100;
-  var acc=await api('/accounts/me');
-  if(acc.ok){
-    Live.accounts=acc.data||[];
-    Live.accounts.filter(function(a){return a.kind==='current';}).forEach(function(a){S.wallets[a.currency]=Math.round(a.balance)/100;});
-    S.spaces=Live.accounts.filter(function(a){return a.kind==='space';}).map(function(a){return {id:String(a.id),name:a.owner_name,goal:a.goal/100,saved:a.balance/100,cur:a.currency,icon:'shield',live:true};});
-    Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.accounts.find(function(a){return a.kind==='current';})||null;
-  }
-  if(Live.primary){
-    S.wallets[Live.primary.currency]=Math.round((Live.primary.balance/100+(Live.primary.currency==='EUR'?S.liveOffset:0))*100)/100;
-    var st=await api('/accounts/'+Live.primary.id+'/statement');
-    if(st.ok) Live.entries=st.data.entries||[];
-  }
-  refresh();Engine.paintAccounts();
-}
-function signOut(){
-  Session.clear();App.close();
-  toast('You have been signed out.');
-}
-
-/* =====================================================================
-   10. CARD CONTROLS + TILT
-   ===================================================================== */
-(function(){
-  var vc=$('#vcard');
-  if(reduceMotion) return;
-  vc.addEventListener('pointermove',function(e){
-    if(e.pointerType!=='mouse') return;
-    var r=vc.getBoundingClientRect(), x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
-    vc.classList.add('tilting');
-    vc.style.setProperty('--ry',(x*10).toFixed(2)+'deg');
-    vc.style.setProperty('--rx',(-y*8).toFixed(2)+'deg');
-  });
-  vc.addEventListener('pointerleave',function(){
-    vc.classList.remove('tilting');vc.style.setProperty('--ry','0deg');vc.style.setProperty('--rx','0deg');
-  });
-})();
-async function toggleFreeze(){
-  S.card.frozen=!S.card.frozen;refresh();
-  if(Session.mode==='live')await saveProfileSettings({card_frozen:S.card.frozen});
-  toast(S.card.frozen?'Card frozen. Payments and withdrawals are paused.':'Card unfrozen. You\'re good to go.');
-}
-async function toggleOnline(){
-  S.card.online=!S.card.online;refresh();
-  if(Session.mode==='live')await saveProfileSettings({online_payments:S.card.online});
-  toast(S.card.online?'Online payments are allowed again.':'Online payments blocked on your card.');
-}
-function toggleDetails(){
-  var vc=$('#vcard');vc.classList.remove('tilting');vc.style.setProperty('--ry','0deg');vc.style.setProperty('--rx','0deg');
-  vc.classList.toggle('is-flipped');renderCard();
-}
-
-/* =====================================================================
-   11. SEND MONEY (FAST)
-   ===================================================================== */
-var Send={target:null,timer:null};
-function ibanValid(raw){
-  var s=raw.replace(/\s+/g,'').toUpperCase();
-  if(!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(s)) return false;
-  var len=IBAN_LEN[s.slice(0,2)];
-  if(len&&s.length!==len) return false;
-  if(s.length<15||s.length>34) return false;
-  var re=s.slice(4)+s.slice(0,4), rem=0;
-  for(var i=0;i<re.length;i++){
-    var c=re.charCodeAt(i), v=c>=65?String(c-55):re[i];
-    for(var j=0;j<v.length;j++) rem=(rem*10+(+v[j]))%97;
-  }
-  return rem===1;
-}
-function hashPick(str,arr){var h=0;for(var i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0;return arr[h%arr.length];}
-function openSend(prefill){
-  $('#sendForm').hidden=false;$('#sendDone').hidden=true;
-  $('#sdErr').textContent='';$('#sdAmt').value='';$('#sdRef').value='';
-  $('#sdCur').value=S.active;$('#sdTo').value=prefill||'';
-  Send.target=null;$('#sdResolve').hidden=true;
-  renderRecipients();updateSendAvail();
-  Modals.open('m-send');
-  if(prefill) resolveRecipient();
-}
-function renderRecipients(){
-  var list=RECIPIENTS.map(function(r){return {key:r.iban,name:r.name,label:firstName(r.name)};});
-  if(Session.mode==='live') Live.accounts.slice(1).forEach(function(a){list.unshift({key:String(a.id),name:a.owner_name,label:'#'+a.id});});
-  $('#recips').innerHTML=list.map(function(r){
-    return '<button type="button" class="recip" data-action="pick-recip" data-key="'+esc(r.key)+'" aria-label="Send to '+esc(r.name)+'"><span>'+esc(initials(r.name))+'</span><small>'+esc(r.label)+'</small></button>';
-  }).join('');
-}
-function updateSendAvail(){
-  var c=$('#sdCur').value;$('#sdAvail').textContent=money(S.wallets[c],c);
-  var veyra=Send.target&&Send.target.type==='veyra';
-  $('#sdNet').textContent=veyra?'Veyra internal · instant':(c==='TRY'?'FAST · instant, 24/7':(c==='EUR'?'SEPA Instant · seconds':c==='GBP'?'Faster Payments · seconds':'Fedwire · same day'));
-}
-function setResolve(kind,html){
-  var el=$('#sdResolve');el.hidden=false;el.className='resolve'+(kind?' '+kind:'');el.innerHTML=html;
-}
-function resolveRecipient(){
-  clearTimeout(Send.timer);Send.target=null;
-  var raw=$('#sdTo').value.trim();
-  $$('.recip').forEach(function(b){b.classList.toggle('sel',b.dataset.key.replace(/\s/g,'')===raw.replace(/\s/g,'').toUpperCase()||b.dataset.key===raw);});
-  if(!raw){$('#sdResolve').hidden=true;updateSendAvail();return;}
-  var id=raw.replace(/^#/,'');
-  if(/^\d{1,9}$/.test(id)){
-    if(Session.mode==='live'){
-      setResolve('','<span class="spin"></span><span>Looking up Veyra account #'+esc(id)+'…</span>');
-      api('/recipients/resolve?identifier='+encodeURIComponent('VY-'+id)).then(function(r){
-        if(!r.ok){setResolve('bad','<svg class="ic"><use href="#i-close"/></svg><span>'+esc(apiErr(r))+'</span>');return;}
-        Send.target={type:'veyra',id:r.data.id,name:r.data.owner_name,bank:'Veyra',currency:r.data.currency};
-        setResolve('ok','<svg class="ic"><use href="#i-check"/></svg><span><b>'+esc(r.data.owner_name)+'</b> · '+esc(r.data.currency)+' Veyra account</span>');updateSendAvail();
-      });return;
-    }
-    setResolve('','<span class="spin"></span><span>Looking up Veyra account #'+esc(id)+'…</span>');
-    Send.timer=setTimeout(function(){
-      var own=Live.accounts.find(function(a){return String(a.id)===id;});
-      if(own&&Live.primary&&own.id===Live.primary.id){setResolve('bad','<svg class="ic"><use href="#i-close"/></svg><span>That\'s the account you\'re sending from.</span>');return;}
-      var name=own?own.owner_name:hashPick('veyra'+id,DIRECTORY_NAMES);
-      Send.target={type:'veyra',id:+id,name:name,bank:'Veyra',own:!!own};
-      setResolve('ok','<svg class="ic"><use href="#i-check"/></svg><span><b>'+esc(name)+'</b> · Veyra account #'+esc(id)+(own?' (yours)':'')+'</span>');
-      updateSendAvail();
-    },420);
-    return;
-  }
-  var clean=raw.replace(/\s+/g,'').toUpperCase();
-  var len=IBAN_LEN[clean.slice(0,2)]||15;
-  if(clean.length<len){setResolve('','<span>Keep typing — '+(len-clean.length)+' characters to go</span>');return;}
-  if(!ibanValid(clean)){setResolve('bad','<svg class="ic"><use href="#i-close"/></svg><span>This IBAN doesn\'t look right. Please check it.</span>');return;}
-  if(Session.mode==='live'){
-    setResolve('','<span class="spin"></span><span>Verifying recipient name…</span>');
-    api('/recipients/resolve?identifier='+encodeURIComponent(clean)).then(function(r){
-      if(!r.ok){setResolve('bad','<svg class="ic"><use href="#i-close"/></svg><span>'+esc(apiErr(r))+'</span>');return;}
-      Send.target={type:'veyra',id:r.data.id,iban:r.data.account_number,name:r.data.owner_name,bank:'Veyra',currency:r.data.currency};
-      setResolve('ok','<svg class="ic"><use href="#i-check"/></svg><span><b>'+esc(r.data.owner_name)+'</b> · '+esc(r.data.currency)+' Veyra</span>');updateSendAvail();
-    });return;
-  }
-  setResolve('','<span class="spin"></span><span>Verifying recipient name…</span>');
-  Send.timer=setTimeout(function(){
-    var known=RECIPIENTS.find(function(r){return r.iban===clean;});
-    var bank=known?known.bank:(clean.slice(0,2)==='TR'?(TR_BANKS[clean.slice(4,9)]||'Turkish bank'):clean.slice(0,2)+' bank');
-    var name=known?known.name:hashPick(clean,DIRECTORY_NAMES);
-    Send.target={type:'iban',iban:clean,name:name,bank:bank};
-    setResolve('ok','<svg class="ic"><use href="#i-check"/></svg><span><b>'+esc(name)+'</b> · '+esc(bank)+'</span>');
-    updateSendAvail();
-  },520);
-}
-$('#sdTo').addEventListener('input',function(){
-  var v=this.value;
-  if(/^[a-z]{2}/i.test(v.trim())){
-    var pos=this.selectionStart, before=v.slice(0,pos).replace(/\s/g,'').length;
-    var g=groupIban(v);this.value=g;
-    var p=0,count=0;while(p<g.length&&count<before){if(g[p]!==' ') count++;p++;}
-    this.setSelectionRange(p,p);
-  }
-  resolveRecipient();
-});
-$('#sdCur').addEventListener('change',updateSendAvail);
-$('#sendF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var err=$('#sdErr'), btn=$('#sdBtn'), cur=$('#sdCur').value, amt=parseAmt($('#sdAmt').value), ref=$('#sdRef').value.trim();
-  err.textContent='';
-  if(!Send.target){err.textContent='Add a valid recipient IBAN or Veyra ID.';$('#sdTo').focus();return;}
-  if(!(amt>0)){err.textContent='Enter an amount greater than zero.';$('#sdAmt').focus();return;}
-  if(amt>S.wallets[cur]){err.textContent='That\'s more than your '+cur+' balance of '+money(S.wallets[cur],cur)+'.';return;}
-  if(toCur(amt,cur,'EUR')>10000){err.textContent='Transfers above €10,000 need a compliance review. Contact your private banker.';return;}
-  var t=Send.target, title='Transfer to '+t.name, liveTx=null;
-  btnBusy(btn,true,'Sending…');
-  var liveSource=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===cur;});
-  var liveDestination=Live.accounts.find(function(a){return a.id===t.id;})||(t.type==='veyra'?{id:t.id,currency:t.currency}:null);
-  if(Session.mode==='live'&&liveSource&&liveDestination&&liveDestination.currency===cur&&t.type==='veyra'){
-    var key=uuid();
-    var r=await api('/transfers',{method:'POST',body:{source_account_id:liveSource.id,destination_account_id:t.id,amount:Math.round(amt*100),idempotency_key:key}});
-    if(r.offline){btnBusy(btn,false);err.textContent='Couldn\'t reach the ledger. Nothing was sent.';return;}
-    if(!r.ok){btnBusy(btn,false);err.textContent=apiErr(r);return;}
-    liveTx=r.data;S.liveLabels[r.data.transaction_id]=title;
-    await syncLive();
-  }else{
-    await sleep(650);
-    adjust(cur,-amt);
-    logActivity({title:title,sub:(ref?ref+' · ':'')+(t.type==='veyra'?'Veyra transfer':t.bank+' · '+(cur==='TRY'?'FAST':'Bank transfer')),cat:'transfer',amt:-amt,cur:cur});
-    refresh();
-  }
-  btnBusy(btn,false);
-  $('#sendForm').hidden=true;
-  var done=$('#sendDone');done.hidden=false;
-  done.innerHTML='<div class="done"><span class="done-ic"><svg class="ic"><use href="#i-check"/></svg></span>'+
-    '<h3>'+esc(money(amt,cur))+' sent</h3><p>'+esc(t.name)+' will see it in their account in seconds.</p>'+
-    '<div class="summary"><div><span>To</span><b>'+esc(t.name)+'</b></div>'+
-    '<div><span>'+(t.type==='veyra'?'Veyra ID':'IBAN')+'</span><b>'+esc(t.type==='veyra'?'#'+t.id:groupIban(t.iban))+'</b></div>'+
-    '<div><span>Reference</span><b>'+esc(liveTx?('TX-'+liveTx.transaction_id+' · ledger'):(ref||'—'))+'</b></div></div>'+
-    '<button class="btn-ink lg" type="button" data-close-send>Done</button></div>';
-  $('[data-close-send]',done).addEventListener('click',function(){Modals.close('m-send');});
-  $('[data-close-send]',done).focus();
-});
-
-/* =====================================================================
-   12. ADD MONEY (TOP-UP)
-   ===================================================================== */
-function luhn(num){
-  var s=0,alt=false;
-  for(var i=num.length-1;i>=0;i--){var n=+num[i];if(alt){n*=2;if(n>9) n-=9;}s+=n;alt=!alt;}
-  return s%10===0;
-}
-function cardBrand(n){
-  if(/^4/.test(n)) return 'VISA';
-  if(/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(n)) return 'MASTERCARD';
-  if(/^9792/.test(n)) return 'TROY';
-  if(/^3[47]/.test(n)) return 'AMEX';
-  return 'CARD';
-}
-function openTopup(){
-  $('#topForm').hidden=false;$('#top3ds').hidden=true;$('#topDone').hidden=true;
-  $('#tpErr').textContent='';$('#tpCur').value=S.active;
-  if(!$('#tpName').value) $('#tpName').value=(Session.user&&Session.user.full_name)||'';
-  paintTopPreview();Modals.open('m-topup');
-}
-function paintTopPreview(){
-  var n=$('#tpNum').value.replace(/\D/g,'');
-  $('#tpBrand').textContent=cardBrand(n);
-  $('#tpNumPrev').textContent=(n+'••••••••••••••••').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
-  $('#tpNamePrev').textContent=($('#tpName').value.trim()||'CARDHOLDER').toUpperCase();
-  $('#tpExpPrev').textContent=$('#tpExp').value||'MM/YY';
-}
-$('#tpNum').addEventListener('input',function(){var d=this.value.replace(/\D/g,'').slice(0,19);this.value=d.replace(/(.{4})/g,'$1 ').trim();paintTopPreview();});
-$('#tpName').addEventListener('input',paintTopPreview);
-$('#tpExp').addEventListener('input',function(){var d=this.value.replace(/\D/g,'').slice(0,4);this.value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d;paintTopPreview();});
-$('#tpCvc').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,4);});
-$('#tpChips').addEventListener('click',function(e){var b=e.target.closest('button');if(b){$('#tpAmt').value=b.dataset.v;}});
-$('#topF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var err=$('#tpErr'), n=$('#tpNum').value.replace(/\D/g,''), exp=$('#tpExp').value, cvc=$('#tpCvc').value, cur=$('#tpCur').value, amt=parseAmt($('#tpAmt').value);
-  err.textContent='';
-  if(n.length<13||!luhn(n)){err.textContent='That card number isn\'t valid.';$('#tpNum').focus();return;}
-  var m=/^(\d{2})\/(\d{2})$/.exec(exp);
-  if(!m||+m[1]<1||+m[1]>12){err.textContent='Enter the expiry as MM/YY.';$('#tpExp').focus();return;}
-  var expDate=new Date(2000+ +m[2],+m[1],0,23,59);
-  if(expDate<new Date()){err.textContent='This card has expired.';$('#tpExp').focus();return;}
-  if(cvc.length<3){err.textContent='Enter the 3 or 4-digit security code.';$('#tpCvc').focus();return;}
-  var minA=cur==='TRY'?100:10, maxA=cur==='TRY'?150000:5000;
-  if(!(amt>=minA&&amt<=maxA)){err.textContent='Top-ups must be between '+money(minA,cur)+' and '+money(maxA,cur)+'.';$('#tpAmt').focus();return;}
-  $('#topForm').hidden=true;$('#top3ds').hidden=false;
-  await sleep(1400);
-  adjust(cur,amt);
-  var brand=cardBrand(n);
-  logActivity({title:'Card Top-Up',sub:(brand==='CARD'?'Card':brand.charAt(0)+brand.slice(1).toLowerCase())+' •• '+n.slice(-4),cat:'topup',amt:amt,cur:cur});
-  refresh();
-  $('#top3ds').hidden=true;
-  var done=$('#topDone');done.hidden=false;
-  done.innerHTML='<div class="done"><span class="done-ic"><svg class="ic"><use href="#i-check"/></svg></span>'+
-    '<h3>'+esc(money(amt,cur))+' added</h3><p>Your '+cur+' balance is now '+esc(money(S.wallets[cur],cur))+'.</p>'+
-    '<button class="btn-ink lg" type="button" data-close-top>Done</button></div>';
-  $('[data-close-top]',done).addEventListener('click',function(){Modals.close('m-topup');});
-  $('[data-close-top]',done).focus();
-  $('#tpCvc').value='';
-});
-
-/* =====================================================================
-   13. CONVERT
-   ===================================================================== */
-var liveRates=Object.assign({},RATES);
-function openConvert(){
-  Object.keys(RATES).forEach(function(c){liveRates[c]=c==='EUR'?1:RATES[c]*(1+(Math.random()-.5)*0.0008);});
-  $('#cvFrom').value=S.active;
-  $('#cvTo').value=S.active==='EUR'?'USD':'EUR';
-  $('#cvErr').textContent='';
-  if(!(parseAmt($('#cvAmt').value)>0)) $('#cvAmt').value='100';
-  calcConvert();Modals.open('m-convert');
-}
-function calcConvert(){
-  var from=$('#cvFrom').value, to=$('#cvTo').value, amt=parseAmt($('#cvAmt').value)||0;
-  var r=liveRates[to]/liveRates[from], fee=Math.round(amt*0.0015*100)/100, out=Math.max(0,(amt-fee)*r);
-  $('#cvAvail').textContent=money(S.wallets[from],from);
-  $('#cvRate').textContent='1 '+from+' = '+r.toFixed(r<0.1?5:4)+' '+to;
-  $('#cvFee').textContent=money(fee,from);
-  $('#cvOut').value=from===to?'—':out.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return {from:from,to:to,amt:amt,fee:fee,out:Math.round(out*100)/100,rate:r};
-}
-['#cvAmt','#cvFrom','#cvTo'].forEach(function(s){$(s).addEventListener('input',calcConvert);$(s).addEventListener('change',calcConvert);});
-$('#cvF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var c=calcConvert(), err=$('#cvErr');err.textContent='';
-  if(c.from===c.to){err.textContent='Pick two different currencies.';return;}
-  if(!(c.amt>0)){err.textContent='Enter an amount to convert.';return;}
-  if(c.amt>S.wallets[c.from]){err.textContent='You only have '+money(S.wallets[c.from],c.from)+' in '+c.from+'.';return;}
-  if(Session.mode==='live'){
-    var source=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c.from;}),destination=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c.to;});
-    if(!source||!destination){err.textContent='Create both settlement accounts before exchanging.';return;}
-    var quote=await api('/fx/quote',{method:'POST',body:{source_account_id:source.id,destination_account_id:destination.id,amount:Math.round(c.amt*100)}});
-    if(!quote.ok){err.textContent=apiErr(quote);return;}
-    var swap=await api('/fx/swap',{method:'POST',body:{quote_id:quote.data.quote_id}});
-    if(!swap.ok){err.textContent=apiErr(swap);return;}
-    await syncLive();Modals.close('m-convert');toast('Exchanged at the '+quote.data.rate_date+' reference rate.');return;
-  }
-  adjust(c.from,-c.amt);adjust(c.to,c.out);
-  logActivity({title:'Converted '+c.from+' to '+c.to,sub:money(c.amt,c.from)+' at '+c.rate.toFixed(4),cat:'fx',amt:c.out,cur:c.to});
-  refresh();Modals.close('m-convert');
-  toast('Converted '+money(c.amt,c.from)+' → '+money(c.out,c.to)+'.');
-});
-
-/* =====================================================================
-   14. LIMITS
-   ===================================================================== */
-function openLimits(){
-  var L=S.card.limits;
-  $('#lmDaily').value=L.daily;$('#lmNfc').value=L.nfc;$('#lmAtm').value=L.atm;
-  paintLimits();Modals.open('m-limits');
-  setTimeout(function(){$('#lmDaily').focus();},90);
-}
-function paintLimits(){
-  $('#lmDailyO').textContent=money(+$('#lmDaily').value,'EUR').replace('.00','');
-  $('#lmNfcO').textContent=money(+$('#lmNfc').value,'EUR').replace('.00','');
-  $('#lmAtmO').textContent=money(+$('#lmAtm').value,'EUR').replace('.00','');
-}
-['#lmDaily','#lmNfc','#lmAtm'].forEach(function(s){$(s).addEventListener('input',paintLimits);});
-$('#lmF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  S.card.limits={daily:+$('#lmDaily').value,nfc:+$('#lmNfc').value,atm:+$('#lmAtm').value};
-  if(Session.mode==='live')await saveProfileSettings({contactless_limit:Math.round(S.card.limits.nfc*100)});
-  refresh();Modals.close('m-limits');toast('Card limits updated.');
-});
-
-/* =====================================================================
-   15. SPACES
-   ===================================================================== */
-var spaceMove={id:null,dir:'add'};
-function openNewSpace(){
-  $('#snName').value='';$('#snGoal').value='';$('#snCur').value=S.active;$('#snErr').textContent='';
-  Modals.open('m-space-new');
-}
-$('#snF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var name=$('#snName').value.trim(), goal=parseAmt($('#snGoal').value), cur=$('#snCur').value, icon=($('input[name=snIcon]:checked')||{}).value||'sun';
-  var err=$('#snErr');err.textContent='';
-  if(name.length<2){err.textContent='Give your space a name.';$('#snName').focus();return;}
-  if(!(goal>0)){err.textContent='Set a goal amount.';$('#snGoal').focus();return;}
-  if(Session.mode==='live'){
-    var made=await api('/accounts',{method:'POST',body:{owner_name:name,currency:cur,kind:'space',goal:Math.round(goal*100),initial_balance:0}});
-    if(!made.ok){err.textContent=apiErr(made);return;}await syncLive();
-  }else S.spaces.push({id:'s'+Date.now().toString(36),name:name,goal:goal,saved:0,cur:cur,icon:icon});
-  refresh();Modals.close('m-space-new');toast('Space “'+name+'” created.');
-});
-function openSpaceMove(id,dir){
-  var sp=S.spaces.find(function(s){return s.id===id;});if(!sp) return;
-  spaceMove.id=id;$('#smErr').textContent='';$('#smAmt').value='';
-  $('#smH').textContent=sp.name;$('#smCur').textContent=sp.cur;
-  setSpaceDir(dir||'add');Modals.open('m-space-move');
-}
-function setSpaceDir(dir){
-  spaceMove.dir=dir;
-  var sp=S.spaces.find(function(s){return s.id===spaceMove.id;});
-  $$('#smF .tabs2 button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.dir===dir?'true':'false');});
-  $('#smSub').textContent=money(sp.saved,sp.cur)+' of '+money(sp.goal,sp.cur);
-  $('#smAvail').textContent=dir==='add'?('From '+sp.cur+' balance: '+money(S.wallets[sp.cur],sp.cur)):('In this space: '+money(sp.saved,sp.cur));
-  $('#smBtn').textContent=dir==='add'?'Add to space':'Move to balance';
-}
-$$('#smF .tabs2 button').forEach(function(b){b.addEventListener('click',function(){setSpaceDir(b.dataset.dir);});});
-$('#smF').addEventListener('submit',async function(e){
-  e.preventDefault();
-  var sp=S.spaces.find(function(s){return s.id===spaceMove.id;}), amt=parseAmt($('#smAmt').value), err=$('#smErr');
-  err.textContent='';
-  if(!(amt>0)){err.textContent='Enter an amount.';$('#smAmt').focus();return;}
-  if(Session.mode==='live'&&sp.live){
-    var currentAccount=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===sp.cur;}),spaceAccount=Live.accounts.find(function(a){return String(a.id)===sp.id;});
-    if(!currentAccount||!spaceAccount){err.textContent='The matching settlement account is unavailable.';return;}
-    var source=spaceMove.dir==='add'?currentAccount:spaceAccount,destination=spaceMove.dir==='add'?spaceAccount:currentAccount;
-    var moved=await api('/transfers',{method:'POST',body:{source_account_id:source.id,destination_account_id:destination.id,amount:Math.round(amt*100),idempotency_key:uuid()}});
-    if(!moved.ok){err.textContent=apiErr(moved);return;}await syncLive();Modals.close('m-space-move');toast(money(amt,sp.cur)+' moved.');return;
-  }
-  if(spaceMove.dir==='add'){
-    if(amt>S.wallets[sp.cur]){err.textContent='Not enough in your '+sp.cur+' balance.';return;}
-    adjust(sp.cur,-amt);sp.saved=Math.round((sp.saved+amt)*100)/100;
-    logActivity({title:'Moved to '+sp.name,sub:'Space',cat:'space',amt:-amt,cur:sp.cur});
-  }else{
-    if(amt>sp.saved){err.textContent='This space only holds '+money(sp.saved,sp.cur)+'.';return;}
-    sp.saved=Math.round((sp.saved-amt)*100)/100;adjust(sp.cur,amt);
-    logActivity({title:'From '+sp.name,sub:'Space',cat:'space',amt:amt,cur:sp.cur});
-  }
-  refresh();Modals.close('m-space-move');
-  toast(spaceMove.dir==='add'?(money(amt,sp.cur)+' added to '+sp.name+'.'):(money(amt,sp.cur)+' moved back to your balance.'));
-});
-
-/* =====================================================================
-   16. ENGINE INSPECTOR (hidden drawer)
-   ===================================================================== */
-var Drawer={
-  isOpen:function(){return !$('#drawer').hidden&&$('#drawer').classList.contains('is-open');},
-  open:function(){
-    var d=$('#drawer'), s=$('#drawerScrim');
-    Drawer.ret=document.activeElement;
-    d.hidden=false;s.hidden=false;Engine.paintMode();Engine.paintAccounts();
-    requestAnimationFrame(function(){d.classList.add('is-open');s.classList.add('is-open');});
-    setTimeout(function(){$('#engRun').focus();},120);
-  },
-  close:function(){
-    var d=$('#drawer'), s=$('#drawerScrim');
-    if(d.hidden) return;
-    d.classList.remove('is-open');s.classList.remove('is-open');
-    setTimeout(function(){d.hidden=true;s.hidden=true;},380);
-    if(Drawer.ret&&Drawer.ret.focus) Drawer.ret.focus();
-  }
-};
-$('#drawerScrim').addEventListener('click',Drawer.close);
-
-var Engine={
-  running:false,
-  sim:{src:{id:101,bal:1000000},dst:{id:202,bal:250000}},
-  paintMode:function(){
-    var live=Session.mode==='live', el=$('#engMode');
-    el.classList.toggle('live',live);
-    $('span',el).innerHTML=live
-      ?'<b>Live API.</b> Fires real concurrent <b>POST /transfers</b> against your PostgreSQL accounts, then re-reads balances to prove nothing was lost or double-counted.'
-      :'<b>Simulation.</b> No backend is connected, so the lock queue is modelled in the browser. Sign in against the running FastAPI server to fire real requests.';
-  },
-  paintAccounts:function(src,dst){
-    if(!src){
-      if(Session.mode==='live'&&Live.accounts.length){
-        src=Live.accounts[0];dst=Live.accounts[1]||null;
-      }else{src=this.sim.src;dst=this.sim.dst;}
-    }
-    $('#engSrcL').textContent='Source · account #'+src.id;
-    $('#engSrc').textContent=money(src.balance!=null?src.balance/100:src.bal/100,'EUR');
-    $('#engDstL').textContent=dst?('Pool · account #'+dst.id):'Pool · created on first run';
-    $('#engDst').textContent=dst?money(dst.balance!=null?dst.balance/100:dst.bal/100,'EUR'):'—';
-  },
-  flash:function(){['#engSrc','#engDst'].forEach(function(s){var b=$(s);b.classList.add('flash');setTimeout(function(){b.classList.remove('flash');},260);});},
-  log:function(cls,text){
-    var el=$('#engLog'), d=document.createElement('div');
-    d.className=cls||'';d.textContent=text;el.appendChild(d);el.scrollTop=el.scrollHeight;
-  },
-  lanes:function(n){
-    $('#engLanes').innerHTML=Array.from({length:n},function(_,i){
-      return '<li class="lane" id="lane'+i+'"><span class="lane-id">T'+(i+1)+'</span>'+
-        '<span class="lane-track"><i class="w" style="width:0"></i><i class="x" style="width:0"></i></span>'+
-        '<span class="lane-st"><span>Queued</span><b></b></span></li>';
-    }).join('');
-  },
-  lane:function(i,status,ms,waitPct,execPct,kind){
-    var li=$('#lane'+i);if(!li) return;
-    var st=$('.lane-st',li);$('span',st).textContent=status;$('b',st).textContent=ms!=null?ms:'';
-    var w=$('.lane-track .w',li), x=$('.lane-track i:last-child',li);
-    if(waitPct!=null) w.style.width=waitPct+'%';
-    if(execPct!=null) x.style.width=execPct+'%';
-    if(kind) x.className=kind;
-  },
-  summary:function(ok,html){var s=$('#engSum');s.hidden=false;s.classList.toggle('fail',!ok);s.innerHTML=html;},
-  start:async function(){
-    if(this.running) return;
-    this.running=true;
-    var btn=$('#engRun');btnBusy(btn,true,'Running…');
-    $('#engLog').innerHTML='';$('#engSum').hidden=true;
-    var dup=$('#engDup').checked;
-    try{
-      if(Session.mode==='live') await this.runLive(dup);
-      else await this.runSim(dup);
-    }catch(err){
-      this.log('err','Unexpected error: '+(err&&err.message||err));
-    }finally{
-      this.running=false;btnBusy(btn,false);
-    }
-  },
-  runSim:async function(dup){
-    var src=this.sim.src, dst=this.sim.dst, AMT=500;
-    var before=src.bal+dst.bal, srcBefore=src.bal;
-    var reqs=[];for(var i=0;i<5;i++) reqs.push({i:i,key:uuid(),arrive:Math.random()*2.4});
-    if(dup) reqs.push({i:5,key:reqs[0].key,arrive:2.6,dup:true});
-    this.lanes(reqs.length);
-    this.log('hl','▶ '+reqs.length+' concurrent POST /transfers · €5.00 each · source #'+src.id+' → pool #'+dst.id);
-    var order=reqs.slice().sort(function(a,b){return a.arrive-b.arrive;});
-    order.forEach(function(r){Engine.log('dim','  T'+(r.i+1)+' arrives at +'+r.arrive.toFixed(2)+' ms · key '+r.key.slice(0,8)+'…');});
-    await sleep(320);
-    var seen={}, replays=[], work=[];
-    order.forEach(function(r){if(seen[r.key]){r.replay=true;replays.push(r);}else{seen[r.key]=true;work.push(r);}});
-    var clock=0, results=[], total=0;
-    work.forEach(function(r){Engine.lane(r.i,'Waiting for lock',null);});
-    for(var k=0;k<work.length;k++){
-      var r=work[k];
-      var waited=Math.max(0,clock-r.arrive);
-      this.log('','  T'+(r.i+1)+' BEGIN · SELECT … FROM accounts WHERE id='+Math.min(src.id,dst.id)+' FOR UPDATE; … id='+Math.max(src.id,dst.id)+' FOR UPDATE');
-      if(k===0&&work.length>1) this.log('dim','  '+work.slice(1).map(function(x){return 'T'+(x.i+1);}).join(', ')+' blocked on row lock #'+Math.min(src.id,dst.id)+' (held by T'+(r.i+1)+')');
-      this.lane(r.i,'Lock acquired',null);
-      await sleep(reduceMotion?60:280);
-      var hold=1.4+Math.random()*2.2;
-      clock=Math.max(clock,r.arrive)+hold;
-      src.bal-=AMT;dst.bal+=AMT;this.paintAccounts(src,dst);this.flash();
-      results.push({r:r,wait:waited,hold:hold,total:waited+hold});
-      this.log('ok','  T'+(r.i+1)+' UPDATE balances · INSERT DEBIT + CREDIT · COMMIT · held lock '+hold.toFixed(1)+' ms');
-      if(k===0&&replays.length){
-        replays.forEach(function(rp){
-          Engine.log('warn','  T'+(rp.i+1)+' SET NX idempotency:'+rp.key.slice(0,8)+'… → key exists → returns T1\'s cached result, no second debit');
-        });
-      }
-      total=clock;
-    }
-    var maxT=Math.max.apply(null,results.map(function(x){return x.total;}))||1;
-    results.forEach(function(x){Engine.lane(x.r.i,'Committed',x.total.toFixed(1)+' ms',x.wait/maxT*100,x.hold/maxT*100,'x');});
-    replays.forEach(function(rp){Engine.lane(rp.i,'Replay · cached',(0.3).toFixed(1)+' ms',0,6,'r');});
-    var after=src.bal+dst.bal, moved=srcBefore-src.bal, okSum=after===before&&moved===AMT*work.length;
-    this.log(okSum?'ok':'err','■ Conservation check: '+money(before/100,'EUR')+' before = '+money(after/100,'EUR')+' after → '+(okSum?'PASS':'FAIL'));
-    this.summary(okSum,'<b>'+work.length+'/'+work.length+' transfers committed</b>, strictly one at a time on the locked rows.'+
-      (replays.length?' The replayed key was answered from Redis — <b>no double debit</b>.':'')+
-      ' Total moved: <b>'+money(moved/100,'EUR')+'</b>. Zero deadlocks, zero lost updates.');
-  },
-  runLive:async function(dup){
-    var AMT=500;
-    this.log('hl','▶ GET /accounts/me');
-    var acc=await api('/accounts/me');
-    if(!acc.ok){this.log('err','  '+(acc.offline?'Backend unreachable.':apiErr(acc)));this.summary(false,'Couldn\'t load your accounts from the API.');return;}
-    var list=acc.data;
-    if(!list.length){this.log('err','  You have no ledger account yet.');this.summary(false,'Open an account first (OTP sign-up provisions one automatically).');return;}
-    if(list.length<2){
-      this.log('','  Only one account found → POST /accounts (Engine Test Pool, €0.00)');
-      var mk=await api('/accounts',{method:'POST',body:{owner_name:'Engine Test Pool',initial_balance:0}});
-      if(!mk.ok){this.log('err','  '+apiErr(mk));this.summary(false,'Couldn\'t create the pool account.');return;}
-      list.push(mk.data);
-    }
-    var src=list[0], dst=list[1];
-    this.paintAccounts(src,dst);
-    var n=5;
-    if(src.balance<AMT*n){this.log('err','  Source balance too low for 5 × €5.00.');this.summary(false,'Source account #'+src.id+' needs at least €25.00.');return;}
-    var before=src.balance+dst.balance, srcBefore=src.balance;
-    var keys=[];for(var i=0;i<n;i++) keys.push(uuid());
-    var reqs=keys.map(function(k,i){return {i:i,key:k};});
-    if(dup) reqs.push({i:n,key:keys[0],dup:true});
-    this.lanes(reqs.length);
-    this.log('hl','▶ Firing '+reqs.length+' requests in parallel · #'+src.id+' → #'+dst.id+' · €5.00 each');
-    var t0=performance.now();
-    var res=await Promise.all(reqs.map(function(r){
-      Engine.lane(r.i,'In flight',null);
-      return api('/transfers',{method:'POST',body:{source_account_id:src.id,destination_account_id:dst.id,amount:AMT,idempotency_key:r.key}})
-        .then(function(x){x.req=r;x.at=performance.now()-t0;return x;});
-    }));
-    var maxMs=Math.max.apply(null,res.map(function(x){return x.ms||0;}))||1;
-    var committed={}, replayed=0, rejected=0;
-    res.forEach(function(x){
-      var r=x.req, tag='T'+(r.i+1), ms=x.ms!=null?Math.round(x.ms)+' ms':'—', srv=x.serverMs!=null?' (server '+x.serverMs.toFixed(1)+' ms)':'';
-      if(x.offline){rejected++;Engine.lane(r.i,'Network error','—',0,100,'e');Engine.log('err','  '+tag+' network error');return;}
-      if(x.ok){
-        var cached=/already processed/i.test(x.data.message||'');
-        if(cached||committed[x.data.transaction_id]){replayed++;Engine.lane(r.i,'Replay · cached',ms,0,(x.ms/maxMs)*100,'r');
-          Engine.log('warn','  '+tag+' 200 · tx '+x.data.transaction_id+' · '+x.data.message+' · '+ms+srv);}
-        else{committed[x.data.transaction_id]=true;S.liveLabels[x.data.transaction_id]='Engine test · parallel transfer';
-          Engine.lane(r.i,'Committed',ms,0,(x.ms/maxMs)*100,'x');
-          Engine.log('ok','  '+tag+' 200 COMPLETED · tx '+x.data.transaction_id+' · key '+r.key.slice(0,8)+'… · '+ms+srv);}
-      }else if(x.status===409&&r.dup){
-        replayed++;Engine.lane(r.i,'Replay blocked',ms,0,(x.ms/maxMs)*100,'r');
-        Engine.log('warn','  '+tag+' 409 · '+apiErr(x)+' · '+ms);
-      }else{
-        rejected++;Engine.lane(r.i,'HTTP '+x.status,ms,0,(x.ms/maxMs)*100,'e');
-        Engine.log('err','  '+tag+' '+x.status+' · '+apiErr(x)+' · '+ms);
-      }
-    });
-    this.log('hl','▶ GET /accounts/me — re-reading balances');
-    var after=await api('/accounts/me');
-    if(!after.ok){this.summary(false,'Transfers ran, but balances couldn\'t be re-read.');return;}
-    var a=after.data.find(function(z){return z.id===src.id;}), b=after.data.find(function(z){return z.id===dst.id;});
-    this.paintAccounts(a,b);this.flash();
-    var nCommit=Object.keys(committed).length;
-    var sumOk=(a.balance+b.balance)===before, debitOk=(srcBefore-a.balance)===AMT*nCommit;
-    var pass=sumOk&&debitOk;
-    this.log(pass?'ok':'err','■ Conservation: '+money(before/100,'EUR')+' → '+money((a.balance+b.balance)/100,'EUR')+' · source debited exactly '+nCommit+' × €5.00 → '+(pass?'PASS':'FAIL'));
-    this.summary(pass,'<b>'+nCommit+' committed</b>'+(replayed?', <b>'+replayed+' idempotent replay</b> answered without a second debit':'')+
-      (rejected?', <b>'+rejected+' rejected</b> (see log — the API rate limit is 10 transfers/min)':'')+
-      '. Slowest round-trip '+Math.round(maxMs)+' ms. Ledger totals '+(pass?'match to the cent.':'do not match — investigate.'));
-    await syncLive();
-  }
-};
-
-function openProfile(){
-  var settings=(Session.user&&Session.user.settings)||{};
-  $('#profile2fa').checked=!!settings.two_factor;
-  $('#profilePass').value='';$('#profileCode').value='';$('#profileErr').textContent='';
-  Modals.open('m-profile');
-}
-async function saveProfileSettings(extra){
-  if(Session.mode!=='live'){
-    Session.user.settings=Object.assign({},Session.user.settings||{},extra);
-    try{localStorage.setItem('veyra_user',JSON.stringify(Session.user));}catch(e){}
-    toast('Profile preference saved in this demo.');return true;
-  }
-  var r=await api('/auth/settings',{method:'PATCH',body:extra});
-  if(r.status===428){$('#profileErr').textContent=apiErr(r);$('#profileCode').focus();return false;}
-  if(!r.ok){$('#profileErr').textContent=apiErr(r);return false;}
-  Session.user.settings=r.data;try{localStorage.setItem('veyra_user',JSON.stringify(Session.user));}catch(e){}
-  return true;
-}
-$('#profileF').addEventListener('submit',async function(e){
-  e.preventDefault();var btn=$('#profileSave');$('#profileErr').textContent='';btnBusy(btn,true,'Saving…');
-  var ok=await saveProfileSettings({two_factor:$('#profile2fa').checked,password:$('#profilePass').value,code:$('#profileCode').value||null});
-  btnBusy(btn,false);if(ok){toast('Security settings updated.');Modals.close('m-profile');}
-});
-$('#profileAvatar').addEventListener('change',function(){
-  var file=this.files&&this.files[0];if(!file)return;
-  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>3000000){$('#profileErr').textContent='Choose a PNG, JPEG or WebP image smaller than 3 MB.';return;}
-  var reader=new FileReader();reader.onload=async function(){if(await saveProfileSettings({avatar:reader.result})){toast('Profile photo saved.');}};reader.readAsDataURL(file);
-});
-$('#avatarPresets').addEventListener('click',async function(e){var b=e.target.closest('[data-avatar]');if(b)await saveProfileSettings({avatar:b.dataset.avatar});});
-$('#passwordF').addEventListener('submit',async function(e){
-  e.preventDefault();var err=$('#passwordErr');err.textContent='';var old=$('#pwCurrent').value,next=$('#pwNew').value;
-  if(next.length<8){err.textContent='Use at least 8 characters.';return;}
-  if(Session.mode!=='live'){toast('Password change simulated in this demo.');return;}
-  var r=await api('/auth/password',{method:'POST',body:{current_password:old,new_password:next}});
-  if(!r.ok){err.textContent=apiErr(r);return;}Session.token=r.data.access_token;localStorage.setItem('veyra_token',Session.token);toast('Password changed. Other sessions were closed.');
-});
-
-/* =====================================================================
-   17. GLOBAL ACTION DELEGATION
-   ===================================================================== */
-document.addEventListener('click',function(e){
-  var el=e.target.closest('[data-action]');if(!el) return;
-  var a=el.dataset.action;
-  if(el.tagName==='A') e.preventDefault();
-  switch(a){
-    case 'planet': Hero.show(el.dataset.planet);break;
-    case 'treasury':
-      if(Session.token) App.open(); else {openSignIn();toast('Sign in to access your treasury.');}
-      break;
-    case 'signin': openSignIn();break;
-    case 'register': openRegister();break;
-    case 'theme': toggleTheme();break;
-    case 'profile': openProfile();break;
-    case 'to-register': Modals.close('m-signin');setTimeout(openRegister,120);break;
-    case 'to-signin': Modals.close('m-register');setTimeout(openSignIn,120);break;
-    case 'forgot': toast('Enter your email on “Open Account” — we\'ll verify you with a one-time code.');break;
-    case 'google': googleSignIn(el);break;
-    case 'apple': googleSignIn(el);break;
-    case 'resend':
-      (async function(){el.disabled=true;var p=await sendOtp();if(p){$('#otpErr').textContent=p;return;}
-        clearOtpBoxes();Otp.startTimers();if(Otp.code) Mail.show(Otp.code);toast('A new code is on its way.');otpBoxes[0].focus();})();
-      break;
-    case 'verify-otp': verifyOtp();break;
-    case 'change-email': Otp.teardown();showRegStep(1);setTimeout(function(){$('#rgEmail').focus();},50);break;
-    case 'mail-close': Mail.hide();break;
-    case 'mail-copy':
-      copyText($('#mailCode').textContent).then(function(){
-        var s=$('span',el);s.textContent='Copied';setTimeout(function(){s.textContent='Copy Code';},1600);
-        toast('Code copied — paste it into the boxes.');
-      });
-      break;
-    case 'signout': signOut();break;
-    case 'revoke-sessions':
-      (async function(){if(Session.mode==='live')await api('/auth/sessions/revoke',{method:'POST',body:{}});Modals.close('m-profile');signOut();toast('All active sessions were closed.');})();
-      break;
-    case 'send': openSend();break;
-    case 'send-max': $('#sdAmt').value=S.wallets[$('#sdCur').value].toFixed(2);break;
-    case 'pick-recip': $('#sdTo').value=/^\d+$/.test(el.dataset.key)?el.dataset.key:groupIban(el.dataset.key);resolveRecipient();$('#sdAmt').focus();break;
-    case 'topup': openTopup();break;
-    case 'convert': openConvert();break;
-    case 'cv-max': $('#cvAmt').value=S.wallets[$('#cvFrom').value].toFixed(2);calcConvert();break;
-    case 'cv-swap': var f=$('#cvFrom').value;$('#cvFrom').value=$('#cvTo').value;$('#cvTo').value=f;calcConvert();break;
-    case 'goto-spaces': $('#d-spaces').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});break;
-    case 'new-space': openNewSpace();break;
-    case 'space-move': openSpaceMove(el.dataset.id,el.dataset.dir);break;
-    case 'freeze': toggleFreeze();break;
-    case 'online': toggleOnline();break;
-    case 'details': toggleDetails();break;
-    case 'limits': openLimits();break;
-    case 'copy':
-      var src=document.getElementById(el.dataset.copy);
-      copyText(src.textContent.trim()).then(function(){toast('Copied to clipboard.');});
-      break;
-    case 'engine': Drawer.open();break;
-    case 'close-drawer': Drawer.close();break;
-    case 'engine-run': Engine.start();break;
-  }
-});
-
-/* currency tabs (click + arrow keys) */
-$('#curRow').addEventListener('click',function(e){
-  var b=e.target.closest('.cur');if(!b) return;
-  S.active=b.dataset.cur;
-  Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.primary;
-  refresh();if(Session.mode==='live') syncLive();
-});
-$('#curRow').addEventListener('keydown',function(e){
-  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
-  var tabs=$$('#curRow .cur'), i=tabs.findIndex(function(t){return t.dataset.cur===S.active;});
-  i=(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-  S.active=tabs[i].dataset.cur;Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.primary;refresh();if(Session.mode==='live') syncLive();tabs[i].focus();e.preventDefault();
-});
-$$('.seg button').forEach(function(b){
-  b.addEventListener('click',function(){
-    activityFilter=b.dataset.filter;activityLimit=8;
-    $$('.seg button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
-    renderActivity();
-  });
-});
-$('#activityMore').addEventListener('click',function(){activityLimit+=10;renderActivity();});
-$$('.dnav a').forEach(function(a){
-  a.addEventListener('click',function(e){
-    e.preventDefault();
-    var t=document.querySelector(a.getAttribute('href'));
-    if(t) t.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
-    $$('.dnav a').forEach(function(x){if(x===a) x.setAttribute('aria-current','page'); else x.removeAttribute('aria-current');});
-  });
-});
-$('.dlogo').addEventListener('click',function(e){e.preventDefault();$('#app').scrollTo({top:0,behavior:reduceMotion?'auto':'smooth'});});
-
-/* =====================================================================
-   18. BOOT
-   ===================================================================== */
-if(Session.load()){
-  updateNavForSession();
-  if(Session.mode==='live'){
-    api('/auth/me').then(function(r){
-      if(r.ok){Session.user=r.data;try{localStorage.setItem('veyra_user',JSON.stringify(r.data));}catch(e){}}
-      else if(r.status===401){Session.clear();}
-    });
-  }
-}else{
-  updateNavForSession();
-}
-
-})();
-</script>
 </body>
 </html>

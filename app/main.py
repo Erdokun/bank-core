@@ -133,7 +133,20 @@ async def login_user(
     """
     Authenticates user credentials and returns a signed JWT access token.
     """
-    query = select(models.User).where(models.User.email == payload.email)
+    email = payload.email.strip().lower()
+    if len(email) > 255 or len(payload.password) > 128:
+        raise HTTPException(422, "Email or password exceeds the allowed length.")
+    import hashlib
+    key = "veyra:login-attempts:" + hashlib.sha256(email.encode()).hexdigest()
+    # Keep a short, shared attempt window across API workers, including OTP attempts.
+    attempts = await redis.eval("""
+        local n = redis.call('INCR', KEYS[1])
+        if n == 1 then redis.call('EXPIRE', KEYS[1], 300) end
+        return n
+    """, 1, key)
+    if attempts > 10:
+        raise HTTPException(429, "Too many sign-in attempts. Please try again in 5 minutes.")
+    query = select(models.User).where(models.User.email == email)
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
@@ -149,6 +162,7 @@ async def login_user(
             raise HTTPException(status_code=428, detail="Email verification required. A code has been sent.")
         await consume_otp(user.email, payload.code, redis, "login")
 
+    await redis.delete(key)
     access_token = security.create_access_token(
         version=user.token_version,
         user_id=user.id,

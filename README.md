@@ -48,6 +48,34 @@ Open your browser and navigate to:
 
 ## Running Automated Tests
 
+The Veyra interface is served at `http://127.0.0.1:8000/`. Its public landing page
+always uses dark mode. The personal workspace supports pure black/white light
+and dark themes, saved profile/preferences, monthly cash flow and budgets,
+transaction search/filters, CSV exports, balance privacy and an inactivity lock.
+The explicit demo uses browser-local sample data; live accounts never use demo
+balances. Card issuance and external card funding are not connected.
+
+Configure the SMTP values in `.env.example` to enable signup, two-step sign-in
+and password-reset emails. Password changes and resets revoke prior tokens.
+Preferences and profile changes use the existing user settings storage; no new
+database migration is needed.
+
+The dark home page has a separate native WebGL Earth scene with rotation,
+clouds, atmospheric lighting and pointer depth. It pauses outside the viewport,
+in the dashboard and in background tabs; reduced-motion preferences are
+respected. The original Earth video/poster provides a fallback. All scene assets
+are served locally. Veyra wordmarks return to the home page while keeping the
+session open, including on mobile.
+
+Optional GPU-only visual QA: install `moderngl` and `Pillow` in the development
+environment and run `python tests/render_hero.py`. This compiles the scene shader
+and saves desktop, rotated and mobile renders to the system temporary directory.
+These packages are not application/runtime dependencies.
+
+For frontend interaction regressions, run `npm ci` followed by `npm test`.
+For all API and workspace checks against the running local services, run
+`python -m pytest tests -q` in the Python environment.
+
 ### 1. Integration & Idempotency Test Suite (`pytest`)
 Run the automated test suite directly inside the isolated container environment:
 ```bash
