@@ -1,15 +1,14 @@
 from datetime import datetime
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field, ConfigDict
-from app.models import UserRole
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class AccountCreate(BaseModel):
     owner_name: Optional[str] = Field(default=None, max_length=100, examples=["Erdem Celik"])
-    initial_balance: int = Field(default=0, ge=0, description="Initial balance in cents (e.g., 10000 = 100.00 EUR)")
+    initial_balance: Literal[0] = 0
     currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
     kind: Literal["current", "space"] = "current"
-    goal: int = Field(default=0, ge=0)
+    goal: int = Field(default=0, ge=0, le=1000000000000)
 
 
 class AccountResponse(BaseModel):
@@ -29,7 +28,8 @@ class AccountResponse(BaseModel):
 class TransferRequest(BaseModel):
     source_account_id: int = Field(..., gt=0)
     destination_account_id: int = Field(..., gt=0)
-    amount: int = Field(..., gt=0, description="Transfer amount in cents (must be positive)")
+    reference: str = Field(default="", max_length=140)
+    amount: int = Field(..., strict=True, gt=0, le=1000000000000, description="Transfer amount in cents (must be positive)")
     idempotency_key: str = Field(..., min_length=5, max_length=100)
 
 
@@ -41,6 +41,8 @@ class TransferResponse(BaseModel):
 
 
 class LedgerEntryResponse(BaseModel):
+    kind: str = "transfer"
+    reference: str = ""
     id: int
     transaction_id: int
     amount: int
@@ -58,10 +60,15 @@ class AccountStatementResponse(BaseModel):
 
 
 class UserCreate(BaseModel):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        return normalized_email(value)
+
     email: str = Field(..., min_length=5, max_length=255, examples=["erdem@bank.de"])
-    full_name: str = Field(..., min_length=2, max_length=100, examples=["Erdem Celik"])
+    full_name: str = Field(..., min_length=2, max_length=100, pattern=r"^\S(?:.*\S)?$", examples=["Erdem Celik"])
     password: str = Field(..., min_length=8, max_length=128, examples=["StrongPass123!"])
-    role: UserRole = Field(default=UserRole.CUSTOMER, examples=["CUSTOMER"])
+    role: Literal["CUSTOMER"] = "CUSTOMER"
 
 
 class UserResponse(BaseModel):
@@ -76,8 +83,13 @@ class UserResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str = Field(..., examples=["erdem@bank.de"])
-    password: str = Field(..., examples=["StrongPass123!"])
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        return normalized_email(value)
+
+    email: str = Field(..., min_length=5, max_length=255, examples=["erdem@bank.de"])
+    password: str = Field(..., min_length=1, max_length=128, examples=["StrongPass123!"])
     code: Optional[str] = Field(default=None, pattern=r"^\d{6}$")
 
 
@@ -87,6 +99,11 @@ class TokenResponse(BaseModel):
 
 
 class OtpSendRequest(BaseModel):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        return normalized_email(value)
+
     email: str = Field(..., min_length=5, max_length=255, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
@@ -97,10 +114,15 @@ class OtpSendResponse(BaseModel):
 
 
 class OtpVerifyRequest(BaseModel):
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        return normalized_email(value)
+
     email: str
     code: str = Field(..., pattern=r"^\d{6}$")
     password: str = Field(..., min_length=8, max_length=128)
-    full_name: str = Field(..., min_length=2, max_length=100)
+    full_name: str = Field(..., min_length=2, max_length=100, pattern=r"^\S(?:.*\S)?$")
     primary_currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
     purpose: str = Field(default="Personal Daily Banking", max_length=100)
 
@@ -108,4 +130,14 @@ class OtpVerifyRequest(BaseModel):
 class OtpVerifyResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse
+    user: UserResponse
+
+
+def normalized_email(value):
+    import re
+    if not isinstance(value, str):
+        raise ValueError("Enter a valid email address.")
+    value = value.strip().lower()
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
+        raise ValueError("Enter a valid email address.")
+    return value

@@ -3,14 +3,16 @@ import redis.asyncio as aioredis
 
 RATE_LIMIT_MAX_REQUESTS = 10
 RATE_LIMIT_WINDOW_SECONDS = 60
-AML_MAX_SINGLE_TRANSFER_CENTS = 1_000_000  # 10,000.00 EUR
+AML_MAX_SINGLE_TRANSFER_CENTS = 1_000_000  # 10,000 settlement-currency units
 
 
-async def check_transfer_rate_limit(user_id: int, redis: aioredis.Redis) -> None:
-    redis_key = f"ratelimit:transfers:user:{user_id}"
-    current_count = await redis.incr(redis_key)
-    if current_count == 1:
-        await redis.expire(redis_key, RATE_LIMIT_WINDOW_SECONDS)
+async def check_transfer_rate_limit(user_id: int, redis: aioredis.Redis, operation: str = "transfers") -> None:
+    redis_key = f"ratelimit:{operation}:user:{user_id}"
+    current_count = await redis.eval("""
+        local n = redis.call('INCR', KEYS[1])
+        if n == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end
+        return n
+    """, 1, redis_key, RATE_LIMIT_WINDOW_SECONDS)
 
     if current_count > RATE_LIMIT_MAX_REQUESTS:
         ttl = await redis.ttl(redis_key)
@@ -24,5 +26,10 @@ def evaluate_anti_fraud_rules(amount_cents: int) -> None:
     if amount_cents > AML_MAX_SINGLE_TRANSFER_CENTS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Anti-Fraud AML Alert: Single transfers exceeding 10,000.00 EUR are blocked pending compliance review."
+            detail="Single transfers are limited to 10,000 units of the settlement currency."
         )
+
+def require_customer(user):
+    from app.models import UserRole
+    if user.role != UserRole.CUSTOMER:
+        raise HTTPException(403, "Auditor accounts have read-only access to banking operations.")

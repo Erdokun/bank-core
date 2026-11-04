@@ -7,12 +7,11 @@
 <meta name="description" content="Bring your currencies, transfers and savings together in one considered workspace. Meet Veyra.">
 <meta name="theme-color" content="#000000">
 <script>(function(){try{document.documentElement.dataset.theme=localStorage.getItem('veyra-theme')||'dark';}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
-<link rel="icon" type="image/png" href="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260827_202005_3346cc4d-ec3b-44ab-825c-b18e49f5021a.png">
+<link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Prata&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700;750&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 
 <style>
@@ -27,8 +26,8 @@
   --vshift:calc(max(0px, (100vh - var(--dh-px))) * .42);
   --ink:#ffffff; --cyan:#79dce8; --cyan-logo:#5fd0e1;
   --rule:rgba(255,255,255,.23); --btn-ink:#071227;
-  --font-sans:'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-serif:'Prata', Georgia, serif;
+  --font-sans:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif:'Inter', system-ui, sans-serif;
   --font-mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 @supports (height:100dvh){
@@ -609,6 +608,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
      HERO STAGE
      ===================================================================== -->
 <div class="landing" id="stage">
+  <div class="galaxy-background" aria-hidden="true"><div class="nebula"></div><canvas id="galaxyCanvas"></canvas></div>
   <header class="navbar"><div class="navrow">
     <a class="logo" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#fff"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#79dce8"/></svg><span>Veyra</span></a>
     <nav class="links" id="site-nav" aria-label="Primary"><a class="signin" id="navSignIn" href="#" data-action="signin">Sign in</a><a class="open" href="#" data-action="register">Get started <svg class="ic"><use href="#i-arrow"/></svg></a></nav>
@@ -616,41 +616,18 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
   </div></header>
   <main>
     <section class="hero" aria-labelledby="heroTitle">
-      <div class="hero-art" aria-hidden="true">
-        <video class="hero-fallback" id="earthVideo" muted loop playsinline preload="none" data-poster="/static/assets/earth-poster.png" disablepictureinpicture tabindex="-1"><source data-src="/static/assets/earth-orbit.mp4" type="video/mp4"></video>
-        <canvas class="hero-earth" id="earthCanvas" data-texture="/static/assets/earth-map.jpg" data-clouds="/static/assets/earth-clouds.png"></canvas>
-      </div>
       <div class="hero-copy">
-      <div class="overline">A clearer world of money</div>
+      <div class="overline">A little space. A clearer perspective.</div>
       <h1 id="heroTitle">Your money.<span>A wider perspective.</span></h1>
-      <p>Different currencies. Meaningful goals. One place to bring it all together. Make room for what comes next, with Veyra.</p>
+      <p>Your everyday finances, in one quiet place.
+      Four currencies. More room for what matters.</p>
       <div class="hero-cta"><a class="marketing-button" href="#" data-action="register">Make it yours <svg class="ic"><use href="#i-arrow"/></svg></a><button class="marketing-button outline" type="button" data-action="demo">Explore the demo</button></div>
       </div>
-      <div class="hero-bottom"><span>Four currencies</span><span>One clear overview</span><span>Built around you</span></div>
-      <a class="hero-scroll" href="#discover">Discover Veyra <svg class="ic"><use href="#i-arrow"/></svg></a>
+      <div class="hero-bottom"><span>EUR</span><span>USD</span><span>GBP</span><span>TRY</span></div>
       <button class="motion-control" type="button" id="heroMotion" aria-pressed="false" aria-label="Pause scene animation"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="motion-pause" d="M9 5v14M15 5v14"/><path class="motion-play" d="m9 5 10 7-10 7Z"/></svg><span>Pause motion</span></button>
     </section>
-    <section class="marketing" id="discover" aria-labelledby="benefitsTitle">
-      <div class="marketing-intro"><div><p class="overline">Less noise. More possibility.</p><h2 id="benefitsTitle">A little more clarity.<br>A lot more control.</h2></div><p>Money should fit the way you live. Veyra brings the everyday details into focus, so you can keep your eyes on the bigger picture.</p></div>
-      <div class="benefits">
-        <article class="benefit"><small>01 / A GLOBAL OUTLOOK</small><svg class="ic"><use href="#i-globe"/></svg><h3>One home. Four currencies.</h3><p>Keep EUR, USD, GBP and TRY side by side. Switch between balances and review an exchange quote before you convert.</p></article>
-        <article class="benefit"><small>02 / ROOM FOR YOUR PLANS</small><svg class="ic"><use href="#i-target"/></svg><h3>Give your goals a space.</h3><p>A first adventure. A rainy day. Something entirely yours. Set a target, move money into a space and watch your progress.</p></article>
-        <article class="benefit"><small>03 / YOUR EVERYDAY, CONSIDERED</small><svg class="ic"><use href="#i-sliders"/></svg><h3>The details, on your terms.</h3><p>Follow your activity, understand your spending and tailor your workspace. Clear controls, without the clutter.</p></article>
-      </div>
-    </section>
-    <section class="marketing product-story" aria-labelledby="storyTitle">
-      <div><p class="overline">Meet your new perspective</p><h2 id="storyTitle">Everything in place.<br>Nothing in your way.</h2><p>An overview that feels calm from the moment you open it. Your balances, activity and savings, thoughtfully brought together.</p><button class="marketing-button outline" type="button" data-action="demo">Take a look inside <svg class="ic"><use href="#i-arrow"/></svg></button></div>
-      <div class="story-preview" aria-label="Illustrative Veyra account preview"><header><b>Veyra</b><span>Illustrative preview</span></header><p class="overline" style="margin-top:26px">Your available balance</p><div class="preview-balance">€4,280.00</div><div class="preview-currencies"><span>EUR</span><span>USD</span><span>GBP</span><span>TRY</span></div><div class="preview-row"><svg class="ic"><use href="#i-target"/></svg><span>Next adventure<small>Your space. Your pace.</small></span><b>€640.00</b></div><div class="preview-row"><svg class="ic"><use href="#i-coffee"/></svg><span>A little everyday<small>Everything, accounted for.</small></span><b>−€5.00</b></div></div>
-    </section>
-    <section class="marketing faq" aria-labelledby="faqTitle"><div><p class="overline">A few things to know</p><h2 id="faqTitle">Good questions.<br>Clear answers.</h2></div><div>
-      <details><summary>What can I do with Veyra?</summary><p>Manage four currency balances, transfer within the Veyra ledger, create savings spaces, review activity and customize your workspace. The demo lets you try these flows with sample money.</p></details>
-      <details><summary>How does the demo work?</summary><p>The demo runs in your browser with sample balances. No real money moves, and no bank account or payment card is issued. Demo changes are saved on this device.</p></details>
-      <details><summary>How do I create an account?</summary><p>Choose Get started, enter your details and verify your email with a six-digit code. Email delivery must be configured on the running service. Real accounts begin with zero balances.</p></details>
-      <details><summary>Can I make it feel like my own?</summary><p>Yes. Choose light or dark mode inside your workspace, set your preferred currency, personalize your profile and adjust your privacy and security preferences.</p></details>
-    </div></section>
-    <section class="marketing final-cta"><p class="overline">A fresh perspective starts here</p><h2>Make space for your next chapter.</h2><a class="marketing-button" href="#" data-action="register">Get started with Veyra <svg class="ic"><use href="#i-arrow"/></svg></a></section>
   </main>
-  <footer><b>Veyra</b><span>Designed for a clearer view of your money.<br>Development preview. Banking and card issuance services are not connected.</span></footer>
+  <footer><b>Veyra</b><span>Banking sandbox · Built for a wider perspective.</span></footer>
 </div>
 
 <!-- =====================================================================
@@ -778,14 +755,14 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
   </div></header>
 
   <main class="dmain">
-    <div class="workspace-top"><a class="mobile-home" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="currentColor"/></svg><span>Veyra</span></a><span>Overview / Personal</span><div class="workspace-tools"><span class="mode-chip" id="modeChip"><i></i><span id="modeText">Demo workspace</span></span><button class="theme-toggle" type="button" data-action="theme" aria-label="Switch to light mode"><svg class="ic"><use href="#i-sun"/></svg></button><button class="btn-quiet" type="button" data-action="profile" aria-label="Open profile"><svg class="ic"><use href="#i-settings"/></svg><span>My profile</span></button></div></div>
+    <div class="workspace-top"><a class="mobile-home" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="currentColor"/></svg><span>Veyra</span></a><span>Workspace <small>/ Overview</small></span><div class="workspace-tools"><span class="mode-chip" id="modeChip"><i></i><span id="modeText">Demo workspace</span></span><button class="theme-toggle" type="button" data-action="theme" aria-label="Switch to light mode"><svg class="ic"><use href="#i-sun"/></svg></button><button class="btn-quiet" type="button" data-action="profile" aria-label="Open profile"><svg class="ic"><use href="#i-settings"/></svg><span>My profile</span></button></div></div>
     <section class="dhead" id="d-home" aria-labelledby="greetH">
       <div>
         <p class="greet-sm" id="greetSm">Good afternoon</p>
         <h2 class="greet-h" id="greetH">Erdem</h2>
         <p class="total"><span id="totalCaption">Total across currencies · indicative</span> <b id="totalAll">€0.00</b></p>
       </div>
-      <div class="head-actions"><button class="btn-line" type="button" data-action="privacy" id="privacyButton" aria-label="Hide balances" aria-pressed="false"><svg class="ic"><use href="#i-eye"/></svg><span>Hide balances</span></button><button class="btn-line" type="button" data-action="refresh-data" aria-label="Refresh balances"><svg class="ic"><use href="#i-repeat"/></svg><span>Refresh</span></button></div>
+      <div class="head-actions"><button class="btn-ink" type="button" data-action="banking">Payments hub</button><button class="btn-line" type="button" data-action="privacy" id="privacyButton" aria-label="Hide balances" aria-pressed="false"><svg class="ic"><use href="#i-eye"/></svg><span>Hide balances</span></button><button class="btn-line" type="button" data-action="refresh-data" aria-label="Refresh balances"><svg class="ic"><use href="#i-repeat"/></svg><span>Refresh</span></button></div>
     </section>
 
     <div class="cur-row" role="tablist" aria-label="Currency accounts" id="curRow">
@@ -804,7 +781,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
               <div class="vface vfront">
                 <div class="vc-top">
                   <span class="vc-brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#f3f5f8"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#79dce8"/></svg>VEYRA</span>
-                  <span class="vc-tier">BLACK</span>
+                  <span class="vc-tier">SANDBOX</span>
                 </div>
                 <div class="vc-mid"><span class="vc-chip" aria-hidden="true"></span><svg class="ic" aria-hidden="true"><use href="#i-wave"/></svg></div>
                 <div class="vc-bal"><small>Balance</small><b id="cardBal">€450.00</b></div>
@@ -819,7 +796,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
                 <div class="vb-row"><div class="vb-sign"></div><div class="vb-cvv"><small>CVV</small><b>482</b></div></div>
                 <div class="vb-grid">
                   <div><small>Card number</small><b>5355 8410 2765 4828</b></div>
-                  <div><small>Expires</small><b>10/30</b></div>
+                  <div><small>Expires</small><b>12/35</b></div>
                   <div class="span2"><small>IBAN</small><b id="cardIban">CH93 0076 2011 6238 5295 7</b></div>
                 </div>
               </div>
@@ -858,7 +835,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
             </div>
           </div>
         </div>
-        <section class="security-note"><svg class="ic"><use href="#i-shield"/></svg><b>Your account, considered.</b><p id="securitySummary">Add an email verification code to your sign-in for another layer of protection.</p><button class="btn-line" type="button" data-action="security">Review security</button></section>
+        <section class="security-note"><button class="btn-ink" type="button" data-action="banking" style="margin:0 0 20px">Open payments hub</button><svg class="ic"><use href="#i-shield"/></svg><b>Your account, considered.</b><p id="securitySummary">Add an email verification code to your sign-in for another layer of protection.</p><button class="btn-line" type="button" data-action="security">Review security</button></section>
       </aside>
 
       <div class="stack">
@@ -871,7 +848,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
           <p class="bal-sub" id="balSub">Available now · held in Veyra Sovereign Ledger</p>
           <div class="actions">
             <button class="act" type="button" data-action="send"><span class="act-ic"><svg class="ic"><use href="#i-send"/></svg></span><b>Send Money</b><small>Veyra transfers</small></button>
-            <button class="act" type="button" data-action="topup"><span class="act-ic"><svg class="ic"><use href="#i-plus"/></svg></span><b>Add Money</b><small>Card top-up</small></button>
+            <button class="act" type="button" data-action="topup"><span class="act-ic"><svg class="ic"><use href="#i-plus"/></svg></span><b>Add Money</b><small>Sandbox funding</small></button>
             <button class="act" type="button" data-action="convert"><span class="act-ic"><svg class="ic"><use href="#i-swap"/></svg></span><b>Convert</b><small>Review a quote</small></button>
             <button class="act" type="button" data-action="goto-spaces"><span class="act-ic"><svg class="ic"><use href="#i-target"/></svg></span><b>Spaces</b><small>Savings goals</small></button>
           </div>
@@ -1049,9 +1026,9 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
   <div class="sheet">
     <button class="sheet-x" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
     <h2 class="m-h" id="lmH">Card limits</h2>
-    <p class="m-p">Changes apply instantly to your Veyra Black card.</p>
+    <p class="m-p">Limits are enforced on sandbox card payments, per account currency. Daily limits reset at 00:00 UTC.</p>
     <form class="mform" id="lmF" style="gap:0">
-      <div class="range"><div class="range-top"><span>Daily card spending</span><output id="lmDailyO">€2,500</output></div><input type="range" id="lmDaily" min="0" max="20000" step="100" aria-label="Daily card spending"><small>Purchases in shops and online, per day.</small></div>
+      <div class="range"><div class="range-top"><span>Daily card spending</span><output id="lmDailyO">€2,500</output></div><input type="range" id="lmDaily" min="0" max="10000" step="100" aria-label="Daily card spending"><small>All card channels combined, per currency and UTC day.</small></div>
       <div class="range"><div class="range-top"><span>Contactless per payment</span><output id="lmNfcO">€50</output></div><input type="range" id="lmNfc" min="0" max="500" step="10" aria-label="Contactless limit"><small>Above this, your PIN is required.</small></div>
       <div class="range"><div class="range-top"><span>ATM withdrawals per day</span><output id="lmAtmO">€1,000</output></div><input type="range" id="lmAtm" min="0" max="5000" step="50" aria-label="ATM limit"><small>Cash withdrawals worldwide.</small></div>
       <button class="btn-ink lg" type="submit" style="margin-top:14px">Save limits</button>
@@ -1118,7 +1095,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
     </section>
     <section class="settings-pane" id="pane-preferences" role="tabpanel" aria-labelledby="tab-preferences" hidden>
       <form id="preferencesF">
-        <label class="settings-row"><span>Appearance<small>A pure black or white workspace, with readable text everywhere.</small></span><select id="prefTheme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+        <label class="settings-row"><span>Appearance<small>A calm workspace, in light or dark.</small></span><select id="prefTheme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
         <label class="settings-row"><span>Preferred currency<small>Open your workspace with this currency selected.</small></span><select id="prefCurrency"><option>EUR</option><option>USD</option><option>GBP</option><option>TRY</option></select></label>
         <label class="settings-row"><span>Hide balances<small>Keep balances and account identifiers out of view.</small></span><input type="checkbox" id="prefHide"></label>
         <label class="settings-row"><span>Compact activity<small>A denser view for your transaction history.</small></span><input type="checkbox" id="prefCompact"></label>
@@ -1139,6 +1116,22 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 <div class="modal dark" id="m-reset" role="dialog" aria-modal="true" aria-labelledby="resetTitle" hidden><div class="sheet"><button class="sheet-x" type="button" data-close aria-label="Close password reset"><svg class="ic"><use href="#i-close"/></svg></button><h2 class="auth-h" id="resetTitle">A fresh start.</h2><p class="auth-p">Enter your account email to request a password reset code.</p><form class="form" id="resetRequestF"><label class="field"><span>Email address</span><input class="inp" id="resetEmail" type="email" autocomplete="email" maxlength="255" required></label><button class="btn-white" type="submit" id="resetRequestBtn">Send reset code</button></form><form class="form" id="resetF" hidden><p class="fine" id="resetNotice"></p><label class="field"><span>Email code</span><input class="inp" id="resetCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><label class="field"><span>New password</span><input class="inp" id="resetPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label class="field"><span>Confirm new password</span><input class="inp" id="resetConfirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="btn-white" type="submit" id="resetBtn">Reset password</button><button class="demo-button" type="button" data-action="reset-again">Use a different email / request again</button></form><p class="form-err" id="resetErr" role="alert" style="margin-top:18px"></p></div></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><i></i><span id="toastMsg"></span></div>
+
+
+<div class="modal light" id="m-banking" role="dialog" aria-modal="true" aria-labelledby="hubTitle" hidden>
+  <div class="sheet"><button class="sheet-x" type="button" data-close aria-label="Close payments hub">×</button>
+    <p class="overline" style="opacity:.5;margin-bottom:12px">YOUR MONEY, IN MOTION</p><h2 class="m-h" id="hubTitle">Payments hub</h2>
+    <p class="m-p">Plan a payment, keep your people close, or explore your sandbox card.</p>
+    <div class="hub-tabs" role="tablist" aria-label="Banking tools">
+      <button type="button" role="tab" data-hub="funding" id="hub-tab-funding" aria-controls="hubContent">Add money</button>
+      <button type="button" role="tab" data-hub="card" id="hub-tab-card" aria-controls="hubContent">Card payment</button>
+      <button type="button" role="tab" data-hub="recipients" id="hub-tab-recipients" aria-controls="hubContent">Recipients</button>
+      <button type="button" role="tab" data-hub="scheduled" id="hub-tab-scheduled" aria-controls="hubContent">Scheduled</button>
+      <button type="button" role="tab" data-hub="audit" id="hub-tab-audit" aria-controls="hubContent">Activity log</button>
+    </div><div class="hub-pane" id="hubContent" role="tabpanel" tabindex="0"></div>
+    <p class="hub-error" id="hubErr" role="alert"></p>
+  </div>
+</div>
 
 <script src="/static/hero-scene.js" defer></script>
 <script src="/static/app.js" defer></script>

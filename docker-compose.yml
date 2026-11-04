@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: bank_password123
       POSTGRES_DB: bank_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,26 +22,37 @@ services:
     container_name: bank_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
 
   api:
     build: .
     container_name: bank_api
     restart: always
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       DATABASE_URL: "postgresql+asyncpg://bank_user:bank_password123@postgres:5432/bank_db"
       REDIS_URL: "redis://redis:6379/0"
-      SMTP_HOST: "${SMTP_HOST:-}"
-      SMTP_PORT: "${SMTP_PORT:-587}"
+      APP_ENV: "${APP_ENV:-development}"
+      BANK_SANDBOX: "${BANK_SANDBOX:-true}"
+      SMTP_HOST: "${SMTP_HOST:-mailpit}"
+      SMTP_PORT: "${SMTP_PORT:-1025}"
+      SMTP_FROM: "${SMTP_FROM:-Veyra <no-reply@veyra.local>}"
       SMTP_USER: "${SMTP_USER:-}"
       SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
-      SMTP_TLS: "${SMTP_TLS:-true}"
+      SMTP_TLS: "${SMTP_TLS:-false}"
       SMTP_SSL: "${SMTP_SSL:-false}"
       PUBLIC_APP_URL: "${PUBLIC_APP_URL:-http://localhost:8000}"
-      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-development-only-change-me}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-development-only-bank-core-key-change-before-deploy}"
     volumes:
+      - ./tests:/app/tests:ro
+      - ./test_concurrency.py:/app/test_concurrency.py:ro
       - ./app:/app/app
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini:ro

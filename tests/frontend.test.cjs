@@ -10,6 +10,8 @@ function workspace(options={}){
   const console=new VirtualConsole();console.on('jsdomError',e=>errors.push(e));
   const dom=new JSDOM(html,{url:'http://localhost:8000/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:console});
   const w=dom.window;
+  const NativeDate=w.Date;
+  w.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:['2026-11-15T12:00:00Z']));}static now(){return new NativeDate('2026-11-15T12:00:00Z').getTime();}};
   w.matchMedia=()=>({matches:true});
   w.fetch=options.fetch||(async()=>{throw Error('offline');});
   w.AbortSignal.timeout=()=>undefined;
@@ -168,4 +170,52 @@ test('live accounts have no sample data and exchange requires a reviewed quote b
     x.submit('#cvF');await flush();assert.equal(requests.filter(p=>p==='/fx/swap').length,1);
     assert.equal(x.errors.length,0);
   }finally{x.dom.window.close();}
+});
+
+function signedInWorkspace(){
+ const requests=[],accounts=[{id:11,user_id:7,owner_name:'Test User',account_number:'DE38999999990000000000',currency:'EUR',balance:10000,kind:'current'}],user={id:7,full_name:'Test User',email:'test@example.com',settings:{},created_at:new Date().toISOString()};
+ let recipients=[],schedules=[];
+ const x=workspace({fetch:async(path,opts)=>{
+  const body=opts.body?JSON.parse(opts.body):undefined;requests.push({path,body,method:opts.method});let data={},status=200;
+  if(path==='/auth/login')data={access_token:'test-token'};
+  else if(path==='/auth/me')data=user;
+  else if(path==='/accounts/me')data=accounts;
+  else if(path.endsWith('/statement'))data={entries:[]};
+  else if(path==='/sandbox/funding'){accounts[0].balance+=body.amount;data={transaction_id:101,status:'COMPLETED'};}
+  else if(path==='/sandbox/card-payments'){status=403;data={detail:'Your card is frozen.'};}
+  else if(path.startsWith('/recipients/resolve'))data={id:22,owner_name:'Friend',currency:'EUR',account_number:'DE12999999990000000022'};
+  else if(path==='/beneficiaries'&&opts.method==='POST'){recipients.push({id:1,...body,currency:'EUR'});data=recipients[0];}
+  else if(path==='/beneficiaries')data=recipients;
+  else if(path.startsWith('/beneficiaries/')){recipients=[];data={status:'deleted'};}
+  else if(path==='/payments/scheduled'&&opts.method==='POST'){schedules.push({id:9,...body,status:'PENDING'});data=schedules[0];}
+  else if(path==='/payments/scheduled')data=schedules;
+  else if(path.startsWith('/payments/scheduled/')){schedules[0].status='CANCELLED';data={status:'CANCELLED'};}
+  else if(path==='/audit/events')data=[{id:1,action:'payment.transfer',created_at:new Date().toISOString(),details:{transaction_id:101}}];
+  else if(path.endsWith('/reconciliation'))data={balanced:true,difference:0,currency:'EUR'};
+  return {ok:status<400,status,headers:new Map([['content-type','application/json']]),json:async()=>data};
+ }});
+ return {...x,requests};
+}
+async function signInFixture(x){x.click('#navSignIn');x.input('#siEmail','test@example.com');x.input('#siPass','StrongPassword123!');x.submit('#signinForm');await flush();await flush();}
+
+test('payments hub funds a real ledger account and surfaces card-control failures',async()=>{
+ const x=signedInWorkspace();try{
+  await signInFixture(x);x.click('.actions [data-action="topup"]');await flush();
+  assert.equal(x.$('#m-banking').hidden,false);assert.match(x.$('#hubContent').textContent,/sandbox/);
+  x.input('#hubAmount','125.25');x.submit('#hubPaymentF');await flush();await flush();
+  const funding=x.requests.find(r=>r.path==='/sandbox/funding');assert.equal(funding.body.amount,12525);assert.equal(funding.body.account_id,11);assert.ok(funding.body.idempotency_key);assert.match(x.$('#hubResult').textContent,/101/);assert.match(x.$('#balAmt').textContent,/225.25/);
+  x.click('[data-hub="card"]');x.submit('#hubPaymentF');await flush();assert.match(x.$('#hubErr').textContent,/frozen/);assert.equal(x.$('#hubPaymentF button').disabled,false);assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
+});
+
+test('saved recipients and scheduled payment cancellation use persisted API records',async()=>{
+ const x=signedInWorkspace();try{
+  await signInFixture(x);x.click('[data-action="banking"]');await flush();x.click('[data-hub="recipients"]');await flush();
+  x.input('#hubRecipientName','My friend');x.input('#hubRecipientId','VY-22');x.submit('#hubRecipientF');await flush();await flush();assert.match(x.$('#hubRecipients').textContent,/My friend/);
+  x.click('[data-hub-delete="1"]');await flush();assert.match(x.$('#hubRecipients').textContent,/will appear/);
+  x.click('[data-hub="scheduled"]');await flush();x.input('#hubDestination','VY-22');x.input('#hubAmount','12.50');x.input('#hubDate','2026-12-01T10:30');x.input('#hubReference','Rent');x.submit('#hubScheduleF');await flush();await flush();
+  const schedule=x.requests.find(r=>r.path==='/payments/scheduled'&&r.method==='POST');assert.ok(schedule.body.idempotency_key);assert.equal(schedule.body.amount,1250);assert.equal(schedule.body.destination_account_id,22);assert.equal(schedule.body.reference,'Rent');assert.match(x.$('#hubSchedules').textContent,/PENDING/);
+  x.click('[data-hub-cancel="9"]');await flush();assert.match(x.$('#hubSchedules').textContent,/CANCELLED/);
+  x.click('[data-hub="audit"]');await flush();x.click('#hubReconcile');await flush();assert.match(x.$('#hubCheck').textContent,/Balanced/);assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
 });

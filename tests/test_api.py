@@ -1,354 +1,255 @@
-import pytest
-import httpx
+"""Integration tests against the Compose PostgreSQL/Redis banking sandbox."""
+import asyncio
 import uuid
+from datetime import datetime, timezone, timedelta
+import os
+import httpx
+import pytest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
-BASE_URL = "http://127.0.0.1:8000"
-
-
-async def create_authenticated_user(client: httpx.AsyncClient, role: str = "CUSTOMER") -> dict:
-    """Helper function to register a user, login, and return auth headers + user info."""
-    email = f"user_{uuid.uuid4().hex[:8]}@bank.de"
-    password = "StrongPassword123!"
-    reg_res = await client.post("/auth/register", json={
-        "email": email,
-        "full_name": "Test User",
-        "password": password,
-        "role": role
-    })
-    assert reg_res.status_code == 201
-
-    login_res = await client.post("/auth/login", json={
-        "email": email,
-        "password": password
-    })
-    assert login_res.status_code == 200
-    token = login_res.json()["access_token"]
-
-    return {
-        "user": reg_res.json(),
-        "headers": {"Authorization": f"Bearer {token}"}
-    }
+BASE_URL = os.getenv('TEST_BASE_URL', 'http://127.0.0.1:8000')
 
 
-@pytest.mark.asyncio
-async def test_health_check():
-    """Verify service uptime, health check response, and tracing headers."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        response = await client.get("/health")
-        assert response.status_code == 200
-        assert response.json() == {"status": "healthy", "service": "bank-core"}
-        assert "x-request-id" in response.headers
-        assert "x-process-time-ms" in response.headers
+async def identity(client):
+    email = f'test_{uuid.uuid4().hex}@example.com'
+    password = 'StrongPassword123!'
+    r = await client.post('/auth/register', json=dict(email=email, password=password, full_name='Test Customer'))
+    assert r.status_code == 201, r.text
+    login = await client.post('/auth/login', json=dict(email=email, password=password))
+    assert login.status_code == 200, login.text
+    return {'Authorization': 'Bearer ' + login.json()['access_token']}, r.json()
 
 
-@pytest.mark.asyncio
-async def test_user_registration_and_jwt_flow():
-    """Verify Argon2 user registration, duplicate rejection, JWT login, and /auth/me protection."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        unique_email = f"user_{uuid.uuid4().hex[:8]}@bank.de"
-        user_payload = {
-            "email": unique_email,
-            "full_name": "Erdem Test",
-            "password": "StrongPassword123!"
-        }
+async def account(client, headers, balance=0, currency='EUR', kind='current'):
+    r = await client.post('/accounts', headers=headers, json=dict(currency=currency, kind=kind))
+    assert r.status_code == 201, r.text
+    item = r.json()
+    if balance:
+        r = await client.post('/sandbox/funding', headers=headers, json=dict(account_id=item['id'], amount=balance, idempotency_key=uuid.uuid4().hex))
+        assert r.status_code == 200, r.text
+    return item
 
-        res_reg = await client.post("/auth/register", json=user_payload)
-        assert res_reg.status_code == 201
-        assert res_reg.json()["email"] == unique_email
-        assert res_reg.json()["role"] == "CUSTOMER"
 
-        res_dup = await client.post("/auth/register", json=user_payload)
-        assert res_dup.status_code == 409
+async def sql(statement, params):
+    engine = create_async_engine(os.getenv('DATABASE_URL', 'postgresql+asyncpg://bank_user:bank_password123@localhost:5432/bank_db'))
+    try:
+        async with engine.begin() as conn:
+            result = await conn.execute(text(statement), params)
+            return result.all() if result.returns_rows else None
+    finally:
+        await engine.dispose()
 
-        res_login = await client.post("/auth/login", json={
-            "email": unique_email,
-            "password": "StrongPassword123!"
-        })
-        assert res_login.status_code == 200
-        token = res_login.json()["access_token"]
 
-        res_me = await client.get(
-            "/auth/me",
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        assert res_me.status_code == 200
-        assert res_me.json()["email"] == unique_email
+def transfer(src, dst, amount, key=None):
+    return dict(source_account_id=src['id'], destination_account_id=dst['id'], amount=amount, idempotency_key=key or uuid.uuid4().hex)
 
 
 @pytest.mark.asyncio
-async def test_invalid_login_and_unauthorized_access():
-    """Verify wrong password rejection (401) and missing token rejection."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        res_bad_login = await client.post("/auth/login", json={
-            "email": "ghost@bank.de",
-            "password": "WrongPassword123!"
-        })
-        assert res_bad_login.status_code == 401
-
-        res_forged = await client.get(
-            "/auth/me",
-            headers={"Authorization": "Bearer invalid.forged.token"}
-        )
-        assert res_forged.status_code == 401
+async def test_health_and_security_headers():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        r = await c.get('/health')
+        assert r.json() == {'status': 'healthy', 'service': 'bank-core'}
+        assert r.headers['x-content-type-options'] == 'nosniff'
+        assert r.headers['x-frame-options'] == 'DENY'
+        assert 'x-request-id' in r.headers and 'x-process-time-ms' in r.headers
+        assert (await c.get('/health/ready')).json()['status'] == 'ready'
+        assert (await c.get('/system/capabilities')).json()['sandbox'] is True
 
 
 @pytest.mark.asyncio
-async def test_create_and_fetch_account():
-    """Verify authenticated account provisioning and /accounts/me listing."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        auth = await create_authenticated_user(client)
-
-        res_create = await client.post(
-            "/accounts",
-            json={"owner_name": "Erdem Main Account", "initial_balance": 10000},
-            headers=auth["headers"]
-        )
-        assert res_create.status_code == 201
-        account_data = res_create.json()
-        assert account_data["balance"] == 10000
-        assert account_data["user_id"] == auth["user"]["id"]
-
-        res_me_accounts = await client.get("/accounts/me", headers=auth["headers"])
-        assert res_me_accounts.status_code == 200
-        assert len(res_me_accounts.json()) == 1
-
-        res_get = await client.get(f"/accounts/{account_data['id']}", headers=auth["headers"])
-        assert res_get.status_code == 200
-        assert res_get.json()["id"] == account_data["id"]
+async def test_registration_normalization_and_privilege_escalation():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        email = f'user_{uuid.uuid4().hex}@example.com'
+        body = dict(email='  '+email.upper()+'  ', full_name='Test User', password='StrongPassword123!')
+        r = await c.post('/auth/register', json=body)
+        assert r.status_code == 201 and r.json()['email'] == email
+        assert r.json()['role'] == 'CUSTOMER'
+        assert (await c.post('/auth/register', json=body)).status_code == 409
+        body['email'] = 'auditor_'+email; body['role'] = 'AUDITOR'
+        assert (await c.post('/auth/register', json=body)).status_code == 422
+        body['role'] = 'CUSTOMER'; body['email'] = 'not-an-email'
+        assert (await c.post('/auth/register', json=body)).status_code == 422
+        assert (await c.get('/auth/me', headers={'Authorization': 'Bearer forged.token'})).status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_successful_transfer_and_idempotency():
-    """Verify atomic fund transfers and Redis fast-path idempotency."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        sender_auth = await create_authenticated_user(client)
-        receiver_auth = await create_authenticated_user(client)
-
-        acc1 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Sender", "initial_balance": 20000},
-            headers=sender_auth["headers"]
-        )).json()
-        acc2 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Recipient", "initial_balance": 5000},
-            headers=receiver_auth["headers"]
-        )).json()
-
-        idem_key = f"pytest-key-{uuid.uuid4().hex}"
-        transfer_payload = {
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 7500,
-            "idempotency_key": idem_key
-        }
-
-        res_transfer = await client.post("/transfers", json=transfer_payload, headers=sender_auth["headers"])
-        assert res_transfer.status_code == 200
-        assert res_transfer.json()["status"] == "COMPLETED"
-
-        res_duplicate = await client.post("/transfers", json=transfer_payload, headers=sender_auth["headers"])
-        assert res_duplicate.status_code == 200
-        assert "already processed" in res_duplicate.json()["message"]
+async def test_money_cannot_be_minted_during_account_creation():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h, _ = await identity(c)
+        for initial in (1, 10000, -1):
+            assert (await c.post('/accounts', headers=h, json={'initial_balance': initial})).status_code == 422
+        a = await account(c, h, 10000)
+        statement = (await c.get(f"/accounts/{a['id']}/statement", headers=h)).json()
+        assert statement['current_balance'] == 10000
+        assert len(statement['entries']) == 1
+        assert statement['entries'][0]['kind'] == 'sandbox_funding'
+        check = (await c.get(f"/accounts/{a['id']}/reconciliation", headers=h)).json()
+        assert check['balanced'] is True and check['difference'] == 0
 
 
 @pytest.mark.asyncio
-async def test_insufficient_funds_rejection():
-    """Verify transactions are rejected when sender lacks necessary balance."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        sender_auth = await create_authenticated_user(client)
-        receiver_auth = await create_authenticated_user(client)
-
-        acc1 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Poor Sender", "initial_balance": 1000},
-            headers=sender_auth["headers"]
-        )).json()
-        acc2 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Receiver", "initial_balance": 0},
-            headers=receiver_auth["headers"]
-        )).json()
-
-        payload = {
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 5000,
-            "idempotency_key": f"pytest-overdraft-{uuid.uuid4().hex}"
-        }
-
-        res = await client.post("/transfers", json=payload, headers=sender_auth["headers"])
-        assert res.status_code == 400
-        assert "Insufficient funds" in res.json()["detail"]
+async def test_durable_idempotency_payload_conflict_and_user_scope():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h, _ = await identity(c); other, _ = await identity(c)
+        a = await account(c, h, 20000); b = await account(c, other, 5000)
+        body = transfer(a, b, 7500)
+        first = await c.post('/transfers', headers=h, json=body)
+        replay = await c.post('/transfers', headers=h, json=body)
+        assert first.status_code == replay.status_code == 200
+        assert first.json()['transaction_id'] == replay.json()['transaction_id']
+        assert 'already processed' in replay.json()['message']
+        body['amount'] += 1
+        assert (await c.post('/transfers', headers=h, json=body)).status_code == 409
+        # A different user can safely use the same client-supplied key.
+        reverse = await c.post('/transfers', headers=other, json=transfer(b, a, 100, body['idempotency_key']))
+        assert reverse.status_code == 200 and reverse.json()['transaction_id'] != first.json()['transaction_id']
+        assert (await c.get(f"/accounts/{a['id']}", headers=h)).json()['balance'] == 12600
 
 
 @pytest.mark.asyncio
-async def test_unauthorized_transfer_and_auditor_rbac():
-    """
-    Verify 403 Forbidden when a customer tries to steal funds or read another user's statement,
-    and verify AUDITOR role can inspect statements but cannot initiate transfers.
-    """
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        victim_auth = await create_authenticated_user(client, role="CUSTOMER")
-        attacker_auth = await create_authenticated_user(client, role="CUSTOMER")
-        auditor_auth = await create_authenticated_user(client, role="AUDITOR")
+async def test_access_control_currency_and_overdraft_guards():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h, _ = await identity(c); other, _ = await identity(c)
+        a = await account(c, h, 1000); b = await account(c, other); usd = await account(c, h, currency='USD')
+        assert (await c.post('/transfers', headers=other, json=transfer(a,b,100))).status_code == 403
+        assert (await c.get(f"/accounts/{a['id']}/statement", headers=other)).status_code == 403
+        assert (await c.get(f"/accounts/{a['id']}/reconciliation", headers=other)).status_code == 404
+        assert (await c.post('/transfers', headers=h, json=transfer(a,b,1001))).status_code == 400
+        assert (await c.post('/transfers', headers=h, json=transfer(a,usd,100))).status_code == 400
+        assert (await c.post('/transfers', headers=h, json=transfer(a,a,1))).status_code == 400
+        for amount in (0,-1,0.5,True):
+            assert (await c.post('/transfers', headers=h, json=transfer(a,b,amount))).status_code == 422
 
-        victim_acc = (await client.post(
-            "/accounts",
-            json={"owner_name": "Victim Account", "initial_balance": 50000},
-            headers=victim_auth["headers"]
-        )).json()
-        attacker_acc = (await client.post(
-            "/accounts",
-            json={"owner_name": "Attacker Account", "initial_balance": 0},
-            headers=attacker_auth["headers"]
-        )).json()
-
-        # 1. Attacker attempts to transfer money out of Victim's account -> Expect 403 Forbidden
-        steal_payload = {
-            "source_account_id": victim_acc["id"],
-            "destination_account_id": attacker_acc["id"],
-            "amount": 10000,
-            "idempotency_key": f"steal-attempt-{uuid.uuid4().hex}"
-        }
-        res_steal = await client.post("/transfers", json=steal_payload, headers=attacker_auth["headers"])
-        assert res_steal.status_code == 403
-
-        # 2. Attacker attempts to view Victim's account statement -> Expect 403 Forbidden
-        res_spy = await client.get(f"/accounts/{victim_acc['id']}/statement", headers=attacker_auth["headers"])
-        assert res_spy.status_code == 403
-
-        # 3. AUDITOR inspects Victim's account statement -> Expect 200 OK
-        res_audit = await client.get(f"/accounts/{victim_acc['id']}/statement", headers=auditor_auth["headers"])
-        assert res_audit.status_code == 200
-        assert res_audit.json()["current_balance"] == 50000
-
-        # 4. AUDITOR attempts to transfer money from Victim's account -> Expect 403 Forbidden
-        auditor_transfer_payload = {
-            "source_account_id": victim_acc["id"],
-            "destination_account_id": attacker_acc["id"],
-            "amount": 1000,
-            "idempotency_key": f"auditor-attempt-{uuid.uuid4().hex}"
-        }
-        res_auditor_tx = await client.post("/transfers", json=auditor_transfer_payload, headers=auditor_auth["headers"])
-        assert res_auditor_tx.status_code == 403
 
 @pytest.mark.asyncio
-async def test_anti_fraud_aml_and_redis_rate_limiting():
-    """
-    Verify AML compliance blocks single transfers over 10,000 EUR (422)
-    and Redis rate limiter blocks excessive transfer attempts (>10/min) with 429.
-    """
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        sender_auth = await create_authenticated_user(client)
-        receiver_auth = await create_authenticated_user(client)
+async def test_auditor_role_is_provisioned_only_by_trusted_database_administration():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h, _ = await identity(c); auditor, info = await identity(c)
+        await sql("UPDATE users SET role='AUDITOR' WHERE id=:id", {'id': info['id']})
+        a = await account(c,h,500)
+        assert (await c.get(f"/accounts/{a['id']}/statement", headers=auditor)).status_code == 200
+        assert (await c.post('/transfers', headers=auditor, json=transfer(a,{'id':999999999},1))).status_code in (403,404)
 
-        acc1 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Whale Sender", "initial_balance": 5_000_000},
-            headers=sender_auth["headers"]
-        )).json()
-        acc2 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Receiver", "initial_balance": 0},
-            headers=receiver_auth["headers"]
-        )).json()
 
-        # 1. Attempt single transfer of 15,000.00 EUR (1,500,000 cents) -> Expect 422 AML Alert (Attempt #1)
-        aml_payload = {
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 1_500_000,
-            "idempotency_key": f"aml-test-{uuid.uuid4().hex}"
-        }
-        res_aml = await client.post("/transfers", json=aml_payload, headers=sender_auth["headers"])
-        assert res_aml.status_code == 422
-        assert "Anti-Fraud AML Alert" in res_aml.json()["detail"]
+@pytest.mark.asyncio
+async def test_concurrent_debits_cannot_overdraw_and_replay_cannot_double_debit():
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=20) as c:
+        h,_=await identity(c); a=await account(c,h,35000); b=await account(c,h)
+        results=await asyncio.gather(*[c.post('/transfers',headers=h,json=transfer(a,b,5000)) for _ in range(10)])
+        assert sum(r.status_code==200 for r in results)==7
+        assert sum(r.status_code==400 for r in results)==3
+        balances=(await c.get('/accounts/me',headers=h)).json()
+        assert sum(a['balance'] for a in balances)==35000
+        assert min(a['balance'] for a in balances)==0
+        h,_=await identity(c); a=await account(c,h,10000); b=await account(c,h)
+        body=transfer(a,b,5000)
+        replays=await asyncio.gather(*[c.post('/transfers',headers=h,json=body) for _ in range(8)])
+        assert all(r.status_code==200 for r in replays)
+        assert len({r.json()['transaction_id'] for r in replays})==1
+        assert (await c.get(f"/accounts/{a['id']}",headers=h)).json()['balance']==5000
 
-        # 2. Fire 9 valid small transfers (Attempts #2 through #10) -> Expect 200 OK
+
+@pytest.mark.asyncio
+async def test_opposite_direction_transfers_preserve_money_without_deadlock():
+    async with httpx.AsyncClient(base_url=BASE_URL,timeout=20) as c:
+        h,_=await identity(c); other,_=await identity(c)
+        a=await account(c,h,10000);b=await account(c,other,10000)
+        results=await asyncio.gather(*[c.post('/transfers',headers=h if i%2 else other,json=transfer(a,b,100) if i%2 else transfer(b,a,100)) for i in range(12)])
+        assert all(r.status_code==200 for r in results)
+        assert (await c.get(f"/accounts/{a['id']}",headers=h)).json()['balance']==10000
+        assert (await c.get(f"/accounts/{b['id']}",headers=other)).json()['balance']==10000
+
+
+@pytest.mark.asyncio
+async def test_transfer_limit_and_rate_limit():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h,_=await identity(c);a=await account(c,h,500000);b=await account(c,h)
+        assert (await c.post('/transfers',headers=h,json=transfer(a,b,1500000))).status_code==422
         for _ in range(9):
-            small_payload = {
-                "source_account_id": acc1["id"],
-                "destination_account_id": acc2["id"],
-                "amount": 100,
-                "idempotency_key": f"rate-ok-{uuid.uuid4().hex}"
-            }
-            res_ok = await client.post("/transfers", json=small_payload, headers=sender_auth["headers"])
-            assert res_ok.status_code == 200
-
-        # 3. Fire the 11th transfer within the same minute -> Expect 429 Too Many Requests
-        spam_payload = {
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 100,
-            "idempotency_key": f"rate-blocked-{uuid.uuid4().hex}"
-        }
-        res_rate_limit = await client.post("/transfers", json=spam_payload, headers=sender_auth["headers"])
-        assert res_rate_limit.status_code == 429
-        assert "Rate limit exceeded" in res_rate_limit.json()["detail"]
-
-@pytest.mark.asyncio
-async def test_anti_fraud_aml_and_redis_rate_limiting():
-    """Verify AML blocks >10k EUR (422) and Redis rate limiter blocks >10 req/min (429)."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        sender_auth = await create_authenticated_user(client)
-        receiver_auth = await create_authenticated_user(client)
-
-        acc1 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Whale Sender", "initial_balance": 5_000_000},
-            headers=sender_auth["headers"]
-        )).json()
-        acc2 = (await client.post(
-            "/accounts",
-            json={"owner_name": "Receiver", "initial_balance": 0},
-            headers=receiver_auth["headers"]
-        )).json()
-
-        # 1. 10.000 EUR üstü transfer denemesi -> 422 Beklenir
-        res_aml = await client.post("/transfers", json={
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 1_500_000,
-            "idempotency_key": f"aml-{uuid.uuid4().hex}"
-        }, headers=sender_auth["headers"])
-        assert res_aml.status_code == 422
-
-        # 2. 9 adet geçerli ufak transfer gönder (Sayaç: 2..10) -> 200 OK
-        for _ in range(9):
-            res_ok = await client.post("/transfers", json={
-                "source_account_id": acc1["id"],
-                "destination_account_id": acc2["id"],
-                "amount": 100,
-                "idempotency_key": f"rate-ok-{uuid.uuid4().hex}"
-            }, headers=sender_auth["headers"])
-            assert res_ok.status_code == 200
-
-        # 3. Aynı dakika içindeki 11. transfer denemesi -> 429 Too Many Requests
-        res_rate = await client.post("/transfers", json={
-            "source_account_id": acc1["id"],
-            "destination_account_id": acc2["id"],
-            "amount": 100,
-            "idempotency_key": f"rate-block-{uuid.uuid4().hex}"
-        }, headers=sender_auth["headers"])
-        assert res_rate.status_code == 429
+            assert (await c.post('/transfers',headers=h,json=transfer(a,b,100))).status_code==200
+        assert (await c.post('/transfers',headers=h,json=transfer(a,b,100))).status_code==429
 
 
 @pytest.mark.asyncio
-async def test_otp_send_does_not_expose_security_code():
-    """OTP dispatch must never leak the code or email HTML through the public API."""
-    async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        test_email = f"otp_client_{uuid.uuid4().hex[:8]}@veyra.com"
+async def test_card_controls_daily_aggregation_and_idempotency():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h,_=await identity(c);a=await account(c,h,10000)
+        body=dict(account_id=a['id'],amount=600,idempotency_key=uuid.uuid4().hex,merchant='Coffee',channel='online')
+        await c.patch('/auth/settings',headers=h,json={'card_frozen':True})
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==403
+        await c.patch('/auth/settings',headers=h,json={'card_frozen':False,'online_payments':False})
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==403
+        await c.patch('/auth/settings',headers=h,json={'online_payments':True,'daily_limit':1000,'contactless_limit':500,'atm_limit':300})
+        r=await c.post('/sandbox/card-payments',headers=h,json=body);assert r.status_code==200,r.text
+        # Replaying a settled purchase still succeeds even after freezing the card.
+        await c.patch('/auth/settings',headers=h,json={'card_frozen':True})
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).json()['transaction_id']==r.json()['transaction_id']
+        await c.patch('/auth/settings',headers=h,json={'card_frozen':False})
+        body['idempotency_key']=uuid.uuid4().hex
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==422
+        body.update(channel='contactless',amount=501,idempotency_key=uuid.uuid4().hex)
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==422
+        body.update(channel='atm',amount=200,idempotency_key=uuid.uuid4().hex)
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==200
+        body['idempotency_key']=uuid.uuid4().hex
+        assert (await c.post('/sandbox/card-payments',headers=h,json=body)).status_code==422
+        assert (await c.get(f"/accounts/{a['id']}/reconciliation",headers=h)).json()['balanced']
 
-        # 1. Dispatch OTP
-        res_send = await client.post("/auth/otp/send", json={"email": test_email})
-        assert res_send.status_code in (200, 503)
-        send_data = res_send.json()
-        assert "dev_otp" not in send_data
-        assert "html_preview" not in send_data
-        if res_send.status_code == 200:
-            assert send_data["status"] == "dispatched"
-            assert send_data["expires_in"] == 600
-        else:
-            assert "unavailable" in send_data["detail"].lower()
-        
+
+@pytest.mark.asyncio
+async def test_beneficiaries_are_persistent_and_isolated():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h,_=await identity(c); other,_=await identity(c);a=await account(c,other)
+        saved=await c.post('/beneficiaries',headers=h,json={'name':'Friend','account_id':a['id']});assert saved.status_code==201
+        identifier=saved.json()['id']
+        assert (await c.get('/beneficiaries',headers=h)).json()[0]['name']=='Friend'
+        assert (await c.get('/beneficiaries',headers=other)).json()==[]
+        assert (await c.delete(f'/beneficiaries/{identifier}',headers=other)).status_code==404
+        assert (await c.delete(f'/beneficiaries/{identifier}',headers=h)).status_code==200
+        assert (await c.get('/beneficiaries',headers=h)).json()==[]
+
+
+@pytest.mark.asyncio
+async def test_scheduled_payment_execution_cancellation_and_insufficient_funds():
+    async with httpx.AsyncClient(base_url=BASE_URL,timeout=20) as c:
+        h,_=await identity(c);other,_=await identity(c);a=await account(c,h,1000);b=await account(c,other)
+        body=transfer(a,b,600);body['due_at']=(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()
+        created=[]
+        for _ in range(3):
+            body['idempotency_key']=uuid.uuid4().hex
+            r=await c.post('/payments/scheduled',headers=h,json=body);assert r.status_code==201,r.text;created.append(r.json()['id'])
+        assert (await c.delete(f'/payments/scheduled/{created[0]}',headers=other)).status_code==404
+        assert (await c.delete(f'/payments/scheduled/{created[0]}',headers=h)).status_code==200
+        await sql("UPDATE scheduled_payments SET due_at=now()-interval '1 second' WHERE user_id=(SELECT user_id FROM accounts WHERE id=:id)",{'id':a['id']})
+        for _ in range(30):
+            rows=(await c.get('/payments/scheduled',headers=h)).json()
+            if not any(r['status']=='PENDING' for r in rows):break
+            await asyncio.sleep(.5)
+        assert sorted(r['status'] for r in rows)==['CANCELLED','COMPLETED','FAILED']
+        assert 'Insufficient' in next(r for r in rows if r['status']=='FAILED')['failure_reason']
+        assert (await c.get(f"/accounts/{a['id']}",headers=h)).json()['balance']==400
+        assert (await c.get('/audit/events',headers=other)).json() # account creation is audited
+        actions={e['action'] for e in (await c.get('/audit/events',headers=h)).json()}
+        assert {'schedule.created','schedule.cancelled','schedule.failed','payment.transfer'}<=actions
+
+
+@pytest.mark.asyncio
+async def test_database_constraints_and_balanced_journals():
+    rows=await sql('''SELECT t.id, a.currency, sum(CASE WHEN l.entry_type='CREDIT' THEN l.amount ELSE -l.amount END)
+      FROM transactions t JOIN ledger_entries l ON t.id=l.transaction_id JOIN accounts a ON a.id=l.account_id
+      GROUP BY t.id,a.currency HAVING sum(CASE WHEN l.entry_type='CREDIT' THEN l.amount ELSE -l.amount END) <> 0''',{})
+    assert rows==[]
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        h,_=await identity(c);a=await account(c,h)
+        from sqlalchemy.exc import IntegrityError
+        with pytest.raises(IntegrityError):
+            await sql('UPDATE accounts SET balance=-1 WHERE id=:id',{'id':a['id']})
+
+
+@pytest.mark.asyncio
+async def test_otp_never_exposes_codes_or_email_html():
+    async with httpx.AsyncClient(base_url=BASE_URL) as c:
+        r=await c.post('/auth/otp/send',json={'email':f'otp_{uuid.uuid4().hex}@example.com'})
+        assert r.status_code in (200,503)
+        assert 'dev_otp' not in r.json() and 'html_preview' not in r.json()

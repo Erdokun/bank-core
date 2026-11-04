@@ -24,7 +24,8 @@ function parseAmt(v){
   var s=String(v||'').trim().replace(/\s/g,'');
   if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s=s.replace(/\./g,'').replace(',','.');
   else s=s.replace(/,/g, s.indexOf('.')>-1?'':'.');
-  var n=parseFloat(s);
+  if(!/^\d+(?:\.\d{1,2})?$/.test(s))return NaN;
+  var n=Number(s);
   return isFinite(n)?Math.round(n*100)/100:NaN;
 }
 function initials(name){
@@ -505,8 +506,8 @@ function liveActivity(){
     var debit=String(en.entry_type).toUpperCase()==='DEBIT';
     var label=S.liveLabels[en.transaction_id];
     return {id:'e'+en.id,t:new Date(en.created_at).getTime(),
-      title:label||(debit?'Transfer sent':'Money received'),
-      sub:'Veyra transfer · settled on ledger',cat:label&&label.indexOf('Engine')===0?'engine':'transfer',
+      title:en.reference||label||(debit?'Transfer sent':'Money received'),
+      sub:(en.kind||'transfer').replace(/_/g,' ')+' · settled on ledger',cat:en.kind==='sandbox_funding'?'topup':label&&label.indexOf('Engine')===0?'engine':'transfer',
       amt:(debit?-1:1)*en.amount/100,cur:en.currency||S.active,live:true};
   });
 }
@@ -581,17 +582,19 @@ async function syncLive(){
   if(Session.token!==syncToken)return;
   if(acc.ok){
     Live.accounts=acc.data||[];
-    Live.accounts.filter(function(a){return a.kind==='current';}).forEach(function(a){S.wallets[a.currency]=Math.round(a.balance)/100;});
+    Object.keys(S.wallets).forEach(function(c){var a=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c;});S.wallets[c]=a?Math.round(a.balance)/100:0;});
     S.spaces=Live.accounts.filter(function(a){return a.kind==='space';}).map(function(a){return {id:String(a.id),name:a.owner_name,goal:a.goal/100,saved:a.balance/100,cur:a.currency,icon:'shield',live:true};});
     Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.accounts.find(function(a){return a.kind==='current';})||null;
   }
   var statements=await Promise.all(Live.accounts.filter(function(a){return a.kind==='current';}).map(async function(a){var st=await api('/accounts/'+a.id+'/statement');return st.ok?(st.data.entries||[]).map(function(en){return Object.assign({},en,{currency:a.currency});}):null;}));
   if(statements.every(function(entries){return entries!==null;}))Live.entries=statements.flat();else toast('Some activity could not be refreshed. Please try again.',true);
   if(Session.token!==syncToken)return;
+  var recipients=await api('/beneficiaries');if(recipients.ok&&Array.isArray(recipients.data))Bank.recipients=recipients.data;
   refresh();Engine.paintAccounts();
   }finally{syncInProgress=false;}
 }
 function signOut(){
+  Bank.generation++;Bank.recipients=[];
   Modals.stack.slice().forEach(function(item){Modals.close(item.el.id);});
   Session.clear();App.close();
   toast('You have been signed out.');
@@ -601,10 +604,10 @@ function signOut(){
    10. CARD CONTROLS + TILT
    ===================================================================== */
 async function toggleFreeze(){
-  var next=!S.card.frozen;if(!await saveProfileSettings({card_frozen:next}))return;S.card.frozen=next;refresh();toast(next?'Card preview frozen.':'Card preview active.');
+  var next=!S.card.frozen;if(!await saveProfileSettings({card_frozen:next}))return;S.card.frozen=next;refresh();toast(next?'Card frozen. Payments are blocked.':'Card is active.');
 }
 async function toggleOnline(){
-  var next=!S.card.online;if(!await saveProfileSettings({online_payments:next}))return;S.card.online=next;refresh();toast(next?'Online payments preference enabled.':'Online payments preference disabled.');
+  var next=!S.card.online;if(!await saveProfileSettings({online_payments:next}))return;S.card.online=next;refresh();toast(next?'Online payments enabled.':'Online payments blocked.');
 }
 function toggleDetails(){
   var vc=$('#vcard');vc.classList.remove('tilting');vc.style.setProperty('--ry','0deg');vc.style.setProperty('--rx','0deg');
@@ -633,14 +636,15 @@ function openSend(prefill){
   $('#sendForm').hidden=false;$('#sendDone').hidden=true;
   $('#sdErr').textContent='';$('#sdAmt').value='';$('#sdRef').value='';
   $('#sdCur').value=S.active;$('#sdTo').value=prefill||'';
-  Send.target=null;$('#sdResolve').hidden=true;
+  Send.key=uuid();Send.target=null;$('#sdResolve').hidden=true;
   renderRecipients();updateSendAvail();
   Modals.open('m-send');
   if(prefill) resolveRecipient();
 }
 function renderRecipients(){
   var list=RECIPIENTS.map(function(r){return {key:r.iban,name:r.name,label:firstName(r.name)};});
-  if(Session.mode==='live') Live.accounts.slice(1).forEach(function(a){list.unshift({key:String(a.id),name:a.owner_name,label:'#'+a.id});});
+  if(Session.mode==='live')list=Bank.recipients.map(function(r){return {key:'VY-'+r.account_id,name:r.name,label:firstName(r.name)};});
+  if(Session.mode==='live') Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===$('#sdCur').value;}).forEach(function(a){list.unshift({key:String(a.id),name:a.owner_name,label:'#'+a.id});});
   $('#recips').innerHTML=list.map(function(r){
     return '<button type="button" class="recip" data-action="pick-recip" data-key="'+esc(r.key)+'" aria-label="Send to '+esc(r.name)+'"><span>'+esc(initials(r.name))+'</span><small>'+esc(r.label)+'</small></button>';
   }).join('');
@@ -719,17 +723,17 @@ $('#sendF').addEventListener('submit',async function(e){
   if(!Send.target){err.textContent='Add a valid recipient IBAN or Veyra ID.';$('#sdTo').focus();return;}
   if(!(amt>0)){err.textContent='Enter an amount greater than zero.';$('#sdAmt').focus();return;}
   if(amt>S.wallets[cur]){err.textContent='That\'s more than your '+cur+' balance of '+money(S.wallets[cur],cur)+'.';return;}
-  if(toCur(amt,cur,'EUR')>10000){err.textContent='Transfers above €10,000 need a compliance review. Contact your private banker.';return;}
+  if(amt>10000){err.textContent='Transfers are limited to 10,000 '+cur+' per payment.';return;}
   var t=Send.target, title='Transfer to '+t.name, liveTx=null;
   btnBusy(btn,true,'Sending…');
   var liveSource=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===cur;});
   var liveDestination=Live.accounts.find(function(a){return a.id===t.id;})||(t.type==='veyra'?{id:t.id,currency:t.currency}:null);
   if(Session.mode==='live'&&(!liveSource||!liveDestination||liveDestination.currency!==cur||t.type!=='veyra')){btnBusy(btn,false);err.textContent='Choose a Veyra recipient with an account in '+cur+'. External bank transfers are not connected.';return;}
   if(Session.mode==='live'&&liveSource&&liveDestination&&liveDestination.currency===cur&&t.type==='veyra'){
-    var key=uuid();
-    var r=await api('/transfers',{method:'POST',body:{source_account_id:liveSource.id,destination_account_id:t.id,amount:Math.round(amt*100),idempotency_key:key}});
+    var key=Send.key||(Send.key=uuid());
+    var r=await api('/transfers',{method:'POST',body:{source_account_id:liveSource.id,destination_account_id:t.id,reference:ref,amount:Math.round(amt*100),idempotency_key:key}});
     if(r.offline){btnBusy(btn,false);err.textContent='The transfer result could not be confirmed. Refresh your activity before retrying.';return;}
-    if(!r.ok){btnBusy(btn,false);err.textContent=apiErr(r);return;}
+    if(!r.ok){if(r.status>=400&&r.status<500&&r.status!==409)Send.key=uuid();btnBusy(btn,false);err.textContent=apiErr(r);return;}
     liveTx=r.data;S.liveLabels[r.data.transaction_id]=title;
     await syncLive();
   }else{
@@ -767,7 +771,7 @@ function cardBrand(n){
   return 'CARD';
 }
 function openTopup(){
-  if(Session.mode==='live'){toast('Card funding is not connected. You can receive transfers from another Veyra ledger account.',true);return;}
+  if(Session.mode==='live'){openBanking('funding');return;}
   $('#topForm').hidden=false;$('#top3ds').hidden=true;$('#topDone').hidden=true;
   $('#tpErr').textContent='';$('#tpCur').value=S.active;
   if(!$('#tpName').value) $('#tpName').value=(Session.user&&Session.user.full_name)||'';
@@ -945,7 +949,7 @@ $('#smF').addEventListener('submit',async function(e){
     var currentAccount=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===sp.cur;}),spaceAccount=Live.accounts.find(function(a){return String(a.id)===sp.id;});
     if(!currentAccount||!spaceAccount){err.textContent='The matching settlement account is unavailable.';return;}
     var source=spaceMove.dir==='add'?currentAccount:spaceAccount,destination=spaceMove.dir==='add'?spaceAccount:currentAccount;
-    var moved=await api('/transfers',{method:'POST',body:{source_account_id:source.id,destination_account_id:destination.id,amount:Math.round(amt*100),idempotency_key:uuid()}});
+    var moved=await api('/transfers',{method:'POST',body:{source_account_id:source.id,destination_account_id:destination.id,reference:sp.name,amount:Math.round(amt*100),idempotency_key:uuid()}});
     if(!moved.ok){err.textContent=apiErr(moved);return;}await syncLive();Modals.close('m-space-move');toast(money(amt,sp.cur)+' moved.');return;
   }
   if(spaceMove.dir==='add'){
@@ -1089,6 +1093,7 @@ var Engine={
     if(!acc.ok){this.log('err','  '+(acc.offline?'Backend unreachable.':apiErr(acc)));this.summary(false,'Couldn\'t load your accounts from the API.');return;}
     var list=acc.data;
     if(!list.length){this.log('err','  You have no ledger account yet.');this.summary(false,'Open an account first (OTP sign-up provisions one automatically).');return;}
+    list=list.filter(function(a){return a.kind==='current'&&a.currency==='EUR';});
     if(list.length<2){
       this.log('','  Only one account found → POST /accounts (Engine Test Pool, €0.00)');
       var mk=await api('/accounts',{method:'POST',body:{owner_name:'Engine Test Pool',initial_balance:0}});
@@ -1149,6 +1154,63 @@ var Engine={
 
 /* Loaded into the app closure by the source assembly, not as a global script. */
 var lastInteraction=Date.now(),syncInProgress=false;
+var Bank={recipients:[],tab:'funding',generation:0};
+function hubAccounts(){return Live.accounts.filter(function(a){return a.kind==='current';});}
+function hubAccountOptions(){return hubAccounts().map(function(a){return '<option value="'+a.id+'"'+(a.currency===S.active?' selected':'')+'>'+esc(a.currency+' · '+money(a.balance/100,a.currency))+'</option>';}).join('');}
+async function openBanking(tab){Modals.open('m-banking');await renderBanking(tab||Bank.tab);}
+async function renderBanking(tab){
+  Bank.tab=tab;var generation=++Bank.generation,content=$('#hubContent');$('#hubErr').textContent='';
+  $$('[data-hub]').forEach(function(b){b.setAttribute('aria-selected',String(b.dataset.hub===tab));b.tabIndex=b.dataset.hub===tab?0:-1;});
+  content.setAttribute('aria-labelledby','hub-tab-'+tab);
+  if(Session.mode!=='live'){
+    content.innerHTML='<div class="hub-result">This hub uses your saved backend account. Sign in to fund a sandbox balance, manage recipients, schedule payments and inspect the audit trail.</div><button class="btn-ink lg" type="button" data-action="signin">Sign in to your account</button>';return;
+  }
+  var options=hubAccountOptions();
+  if(!options){content.innerHTML='<p class="hub-note">Your accounts are loading. Refresh the workspace and try again.</p>';return;}
+  if(tab==='funding'||tab==='card'){
+    var isCard=tab==='card';
+    content.innerHTML='<p class="hub-note">'+(isCard?'Try a card purchase or ATM withdrawal. Freeze, channel controls and daily limits are enforced by the backend.':'Credit test money to your account through a balanced clearing journal. This is a sandbox; no external card is charged.')+'</p>'+
+      '<form id="hubPaymentF"><label>Account<select class="li" id="hubAccount">'+options+'</select></label>'+
+      (isCard?'<div class="grid2"><label>Merchant / ATM<input class="li" id="hubMerchant" value="Neighbourhood coffee" maxlength="100" required></label><label>Channel<select class="li" id="hubChannel"><option value="online">Online purchase</option><option value="contactless">Contactless</option><option value="atm">ATM withdrawal</option></select></label></div>':'')+
+      '<label>Amount<input class="li" inputmode="decimal" id="hubAmount" value="'+(isCard?'5.00':'250.00')+'" required></label><button class="btn-ink lg" type="submit">'+(isCard?'Make sandbox payment':'Add sandbox money')+'</button></form><div id="hubResult" role="status"></div>';
+    var paymentKey=uuid();
+    $('#hubPaymentF').addEventListener('submit',async function(e){
+      e.preventDefault();var amount=parseAmt($('#hubAmount').value);if(!(amount>0&&amount<=5000)){$('#hubErr').textContent='Enter an amount between 0.01 and 5,000.';return;}
+      var body={account_id:+$('#hubAccount').value,amount:Math.round(amount*100),idempotency_key:paymentKey};
+      if(isCard){body.merchant=$('#hubMerchant').value.trim();body.channel=$('#hubChannel').value;}
+      var button=$('#hubPaymentF button');btnBusy(button,true,'Processing');$('#hubErr').textContent='';
+      var result=await api(isCard?'/sandbox/card-payments':'/sandbox/funding',{method:'POST',body:body});btnBusy(button,false);
+      if(generation!==Bank.generation)return;
+      if(!result.ok){$('#hubErr').textContent=result.offline?'Connection lost. Retry this payment to check its result.':apiErr(result);return;}
+      paymentKey=uuid();$('#hubResult').className='hub-result';$('#hubResult').textContent='Completed · Transaction #'+result.data.transaction_id;await syncLive();toast(isCard?'Payment settled.':'Sandbox balance updated.');
+    });return;
+  }
+  if(tab==='recipients'){
+    content.innerHTML='<form id="hubRecipientF"><div class="grid2"><label>Name<input class="li" id="hubRecipientName" placeholder="A person or business" maxlength="100" required></label><label>Veyra ID or IBAN<input class="li" id="hubRecipientId" placeholder="VY-123" required></label></div><button class="btn-ink" type="submit">Save recipient</button></form><div class="hub-list" id="hubRecipients">Loading recipients…</div>';
+    var recipients=await api('/beneficiaries');if(generation!==Bank.generation)return;
+    if(recipients.ok){Bank.recipients=recipients.data;$('#hubRecipients').innerHTML=Bank.recipients.map(function(r){return '<div class="hub-item"><div><b>'+esc(r.name)+'</b><small>'+esc(r.currency+' · VY-'+r.account_id)+'</small></div><div><button class="btn-quiet" data-hub-send="'+r.account_id+'">Send</button><button class="btn-quiet" data-hub-delete="'+r.id+'">Remove</button></div></div>';}).join('')||'<p class="hub-note">Your saved recipients will appear here.</p>';}
+    else $('#hubErr').textContent=apiErr(recipients);
+    $('#hubRecipientF').addEventListener('submit',async function(e){e.preventDefault();var button=this.querySelector('button');btnBusy(button,true);var resolved=await api('/recipients/resolve?identifier='+encodeURIComponent($('#hubRecipientId').value.trim()));if(!resolved.ok){btnBusy(button,false);$('#hubErr').textContent=apiErr(resolved);return;}var saved=await api('/beneficiaries',{method:'POST',body:{account_id:resolved.data.id,name:$('#hubRecipientName').value.trim()}});btnBusy(button,false);if(saved.ok)renderBanking('recipients');else $('#hubErr').textContent=apiErr(saved);});return;
+  }
+  if(tab==='scheduled'){
+    content.innerHTML='<p class="hub-note">The server settles pending payments when they become due, even after you close this page. Funds are checked at execution time.</p><form id="hubScheduleF"><div class="grid2"><label>From<select class="li" id="hubAccount">'+options+'</select></label><label>Recipient Veyra ID / IBAN<input class="li" id="hubDestination" placeholder="VY-123" required></label></div><div class="grid2"><label>Amount<input class="li" id="hubAmount" inputmode="decimal" placeholder="25.00" required></label><label>Payment date<input class="li" id="hubDate" type="datetime-local" required></label></div><label>Reference<input class="li" id="hubReference" maxlength="140" placeholder="Rent, a gift, something planned…"></label><button class="btn-ink" type="submit">Schedule payment</button></form><div id="hubSchedules" class="hub-list">Loading payments…</div>';
+    var schedules=await api('/payments/scheduled');if(generation!==Bank.generation)return;
+    if(schedules.ok)$('#hubSchedules').innerHTML=schedules.data.map(function(p){var a=Live.accounts.find(function(a){return a.id===p.source_account_id;});return '<div class="hub-item"><div><b>'+esc(money(p.amount/100,a?a.currency:'EUR')+' → VY-'+p.destination_account_id)+'</b><small>'+esc(new Date(p.due_at).toLocaleString()+' · '+p.status+(p.failure_reason?' · '+p.failure_reason:''))+'</small></div>'+(p.status==='PENDING'?'<button class="btn-quiet" data-hub-cancel="'+p.id+'">Cancel</button>':'')+'</div>';}).join('')||'<p class="hub-note">Nothing scheduled yet.</p>';else $('#hubErr').textContent=apiErr(schedules);
+    var scheduleKey=uuid();
+    $('#hubScheduleF').addEventListener('submit',async function(e){e.preventDefault();var amount=parseAmt($('#hubAmount').value),date=new Date($('#hubDate').value);if(!(amount>0)||!Number.isFinite(date.getTime())){$('#hubErr').textContent='Enter a positive amount and a payment date.';return;}var button=this.querySelector('button');btnBusy(button,true);var resolved=await api('/recipients/resolve?identifier='+encodeURIComponent($('#hubDestination').value.trim()));if(!resolved.ok){btnBusy(button,false);$('#hubErr').textContent=apiErr(resolved);return;}var result=await api('/payments/scheduled',{method:'POST',body:{idempotency_key:scheduleKey,source_account_id:+$('#hubAccount').value,destination_account_id:resolved.data.id,amount:Math.round(amount*100),due_at:date.toISOString(),reference:$('#hubReference').value.trim()}});btnBusy(button,false);if(result.ok){toast('Payment scheduled.');renderBanking('scheduled');}else $('#hubErr').textContent=apiErr(result);});return;
+  }
+  content.innerHTML='<p class="hub-note">A record of your security changes and settled payments. Check your available balance against its journal at any time.</p><button class="btn-line" id="hubReconcile" type="button">Check '+esc(S.active)+' balance integrity</button><div id="hubCheck" role="status"></div><div class="hub-list" id="hubAudit">Loading activity…</div>';
+  var events=await api('/audit/events');if(generation!==Bank.generation)return;
+  if(events.ok)$('#hubAudit').innerHTML=events.data.map(function(item){return '<div class="hub-item"><div><b>'+esc(item.action.replace(/[._]/g,' '))+'</b><small>'+esc(new Date(item.created_at).toLocaleString())+(item.details.transaction_id?' · Transaction #'+esc(item.details.transaction_id):'')+'</small></div></div>';}).join('')||'<p class="hub-note">Your account activity will appear here.</p>';else $('#hubErr').textContent=apiErr(events);
+  $('#hubReconcile').addEventListener('click',async function(){var a=hubAccounts().find(function(a){return a.currency===S.active;});if(!a)return;btnBusy(this,true);var r=await api('/accounts/'+a.id+'/reconciliation');btnBusy(this,false);if(r.ok){$('#hubCheck').className='hub-result';$('#hubCheck').textContent=r.data.balanced?'Balanced · All funds are accounted for in the journal.':'Difference found: '+money(r.data.difference/100,r.data.currency)+'. Review legacy opening balances.';}else $('#hubErr').textContent=apiErr(r);});
+}
+$('#m-banking').addEventListener('click',async function(e){
+  var tab=e.target.closest('[data-hub]');if(tab){renderBanking(tab.dataset.hub);return;}
+  var send=e.target.closest('[data-hub-send]');if(send){Modals.close('m-banking');openSend('VY-'+send.dataset.hubSend);return;}
+  var remove=e.target.closest('[data-hub-delete]'),cancel=e.target.closest('[data-hub-cancel]');
+  if(remove||cancel){var button=remove||cancel;button.disabled=true;var r=await api(remove?'/beneficiaries/'+remove.dataset.hubDelete:'/payments/scheduled/'+cancel.dataset.hubCancel,{method:'DELETE'});if(r.ok)renderBanking(remove?'recipients':'scheduled');else{button.disabled=false;$('#hubErr').textContent=apiErr(r);}}
+});
+$('.hub-tabs').addEventListener('keydown',function(e){if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;var tabs=$$('[data-hub]'),index=tabs.indexOf(document.activeElement);if(index<0)return;e.preventDefault();index=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[index].focus();renderBanking(tabs[index].dataset.hub);});
 function preferences(){return (Session.user&&Session.user.settings)||{};}
 function persistSessionUser(){
   if(!Session.user)return;
@@ -1315,6 +1377,7 @@ document.addEventListener('click',function(e){
     case 'revoke-sessions':
       (async function(){el.disabled=true;if(Session.mode==='live'){var r=await api('/auth/sessions/revoke',{method:'POST',body:{}});if(!r.ok){toast(apiErr(r),true);el.disabled=false;return;}}el.disabled=false;signOut();toast('All sessions have been closed.');})();
       break;
+    case 'banking': openBanking('funding');break;
     case 'send': openSend();break;
     case 'send-max': $('#sdAmt').value=S.wallets[$('#sdCur').value].toFixed(2);break;
     case 'pick-recip': $('#sdTo').value=/^\d+$/.test(el.dataset.key)?el.dataset.key:groupIban(el.dataset.key);resolveRecipient();$('#sdAmt').focus();break;

@@ -9,11 +9,15 @@ from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 import redis.asyncio as aioredis
-from app.database import get_db
-from app.redis_client import get_redis
-from app import models, schemas, security, guards
+from app.database import get_db, engine
+from app.redis_client import get_redis, redis_client
+from app import models, schemas, security, guards, ledger
+from app.operations import register_operations, scheduler_loop, sandbox_enabled
+from contextlib import asynccontextmanager
+import asyncio
 from app.veyra import register_veyra_routes, generate_iban, issue_otp, consume_otp
 
 # Configure structured-style application logger
@@ -23,10 +27,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bank-core")
 
+@asynccontextmanager
+async def lifespan(app):
+    worker = asyncio.create_task(scheduler_loop())
+    yield
+    worker.cancel()
+    try:
+        await worker
+    except asyncio.CancelledError:
+        pass
+    await engine.dispose()
+    await redis_client.aclose()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Bank Core Ledger API",
     description="High-concurrency banking engine with double-entry ledger bookkeeping, JWT auth, RBAC, and Anti-Fraud guards.",
-    version="1.3.0"
+    version="2.0.0"
 )
 
 # Bearer token security scheme for Swagger UI Authorize button
@@ -71,7 +89,7 @@ async def request_tracing_middleware(request: Request, call_next):
     Intercepts every incoming HTTP request to assign a unique correlation ID (X-Request-ID)
     and measure execution latency in milliseconds for audit logging.
     """
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    request_id = str(uuid.uuid4())
     start_time = time.perf_counter()
 
     logger.info(f"request_started | request_id={request_id} method={request.method} path={request.url.path}")
@@ -79,6 +97,11 @@ async def request_tracing_middleware(request: Request, call_next):
     response = await call_next(request)
 
     process_time_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
+    if not request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store"
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Process-Time-Ms"] = str(process_time_ms)
 
@@ -102,6 +125,8 @@ async def register_user(
     """
     Registers a new user with an Argon2id hashed password and assigned RBAC role.
     """
+    if not sandbox_enabled():
+        raise HTTPException(403, "Use verified email registration in this environment.")
     existing_query = select(models.User).where(models.User.email == payload.email)
     existing_result = await db.execute(existing_query)
     if existing_result.scalar_one_or_none():
@@ -113,12 +138,18 @@ async def register_user(
     new_user = models.User(
         email=payload.email,
         full_name=payload.full_name,
-        hashed_password=security.hash_password(payload.password),
-        role=payload.role
+        hashed_password=await security.hash_password_async(payload.password),
+        role=models.UserRole.CUSTOMER
     )
 
     db.add(new_user)
-    await db.commit()
+    try:
+        await db.flush()
+        ledger.audit(db, new_user.id, "auth.registered")
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "A user with this email address is already registered.")
     await db.refresh(new_user)
 
     return new_user
@@ -150,7 +181,8 @@ async def login_user(
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    if not user or not security.verify_password(payload.password, user.hashed_password):
+    valid_password = await security.verify_password_async(payload.password, user.hashed_password if user else security.DUMMY_PASSWORD_HASH)
+    if not user or not valid_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
@@ -163,6 +195,8 @@ async def login_user(
         await consume_otp(user.email, payload.code, redis, "login")
 
     await redis.delete(key)
+    ledger.audit(db, user.id, "auth.login")
+    await db.commit()
     access_token = security.create_access_token(
         version=user.token_version,
         user_id=user.id,
@@ -192,6 +226,7 @@ async def create_account(
     """
     Creates a new bank account bound to the currently authenticated user.
     """
+    guards.require_customer(current_user)
     generated_iban = generate_iban(payload.currency)
     owner_name = payload.owner_name if payload.owner_name else current_user.full_name
 
@@ -199,11 +234,12 @@ async def create_account(
         user_id=current_user.id,
         account_number=generated_iban,
         owner_name=owner_name,
-        balance=payload.initial_balance,
+        balance=0,
         currency=payload.currency, kind=payload.kind, goal=payload.goal
     )
 
     db.add(new_account)
+    ledger.audit(db, current_user.id, "account.created", currency=payload.currency, kind=payload.kind)
     await db.commit()
     await db.refresh(new_account)
 
@@ -281,12 +317,15 @@ async def get_account_statement(
         )
 
     entries_query = (
-        select(models.LedgerEntry)
+        select(models.LedgerEntry, models.Transaction)
+        .join(models.Transaction)
         .where(models.LedgerEntry.account_id == account_id)
         .order_by(models.LedgerEntry.created_at.desc())
     )
     entries_result = await db.execute(entries_query)
-    entries = entries_result.scalars().all()
+    entries = [dict(id=e.id, transaction_id=e.transaction_id, amount=e.amount,
+        entry_type=e.entry_type.value, created_at=e.created_at, kind=tx.kind,
+        reference=tx.reference) for e, tx in entries_result.all()]
 
     return schemas.AccountStatementResponse(
         account_id=account.id,
@@ -303,127 +342,30 @@ async def transfer_funds(
     db: AsyncSession = Depends(get_db),
     redis: aioredis.Redis = Depends(get_redis)
 ):
-    """
-    Executes an atomic funds transfer protected by Redis Rate Limiting,
-    Anti-Fraud AML compliance rules, Redis Idempotency, and PostgreSQL row locking.
-    """
-    # 1. Redis Rate Limiting Guard (Max 10 attempts per minute per user)
+    guards.require_customer(current_user)
     await guards.check_transfer_rate_limit(current_user.id, redis)
     guards.evaluate_anti_fraud_rules(payload.amount)
+    tx, replay = await ledger.post(db, current_user.id, payload.idempotency_key,
+        payload.source_account_id, payload.destination_account_id, payload.amount,
+        reference=payload.reference)
+    await db.commit()
+    return schemas.TransferResponse(transaction_id=tx.id, idempotency_key=payload.idempotency_key,
+        status=tx.status.value, message="Transfer already processed." if replay else "Funds transferred successfully.")
 
-    # 2. Basic validation
-    if payload.source_account_id == payload.destination_account_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Source and destination accounts must be different."
-        )
-
-    # 3. Anti-Fraud / AML Compliance Guard (Max 10,000.00 EUR per single transfer)
-    guards.evaluate_anti_fraud_rules(payload.amount)
-
-    # 4. Redis Fast-Path Idempotency Check
-    redis_key = f"idempotency:{current_user.id}:{payload.idempotency_key}"
-    is_new_request = await redis.set(redis_key, "PROCESSING", ex=60, nx=True)
-
-    if not is_new_request:
-        existing_tx_query = select(models.Transaction).join(models.LedgerEntry).join(models.Account).where(
-            models.Transaction.idempotency_key == payload.idempotency_key,
-            models.Account.user_id == current_user.id,
-            models.LedgerEntry.entry_type == models.EntryType.DEBIT
-        )
-        tx_result = await db.execute(existing_tx_query)
-        existing_tx = tx_result.scalar_one_or_none()
-
-        if existing_tx:
-            return schemas.TransferResponse(
-                transaction_id=existing_tx.id,
-                idempotency_key=existing_tx.idempotency_key,
-                status=existing_tx.status.value,
-                message="Transfer already processed (Redis cached response)."
-            )
-
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A transfer request with this idempotency key is already in progress."
-        )
-
-    try:
-        first_id = min(payload.source_account_id, payload.destination_account_id)
-        second_id = max(payload.source_account_id, payload.destination_account_id)
-
-        stmt_first = select(models.Account).where(models.Account.id == first_id).with_for_update()
-        stmt_second = select(models.Account).where(models.Account.id == second_id).with_for_update()
-
-        res_first = await db.execute(stmt_first)
-        res_second = await db.execute(stmt_second)
-
-        acc_first = res_first.scalar_one_or_none()
-        acc_second = res_second.scalar_one_or_none()
-
-        if not acc_first or not acc_second:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="One or both bank accounts do not exist."
-            )
-
-        sender = acc_first if acc_first.id == payload.source_account_id else acc_second
-        receiver = acc_first if acc_first.id == payload.destination_account_id else acc_second
-
-        if sender.user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: You can only transfer funds from your own account."
-            )
-
-        if sender.currency != receiver.currency:
-            raise HTTPException(status_code=400, detail="Use currency exchange for different settlement currencies.")
-
-        if sender.balance < payload.amount:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient funds. Available: {sender.balance} cents, Required: {payload.amount} cents."
-            )
-
-        sender.balance -= payload.amount
-        receiver.balance += payload.amount
-
-        transaction_record = models.Transaction(
-            idempotency_key=payload.idempotency_key,
-            status=models.TransactionStatus.COMPLETED
-        )
-        db.add(transaction_record)
-        await db.flush()
-
-        debit_entry = models.LedgerEntry(
-            transaction_id=transaction_record.id,
-            account_id=sender.id,
-            amount=payload.amount,
-            entry_type=models.EntryType.DEBIT
-        )
-        credit_entry = models.LedgerEntry(
-            transaction_id=transaction_record.id,
-            account_id=receiver.id,
-            amount=payload.amount,
-            entry_type=models.EntryType.CREDIT
-        )
-
-        db.add_all([debit_entry, credit_entry])
-        await db.commit()
-
-        await redis.set(redis_key, "COMPLETED", ex=300)
-
-        return schemas.TransferResponse(
-            transaction_id=transaction_record.id,
-            idempotency_key=transaction_record.idempotency_key,
-            status=transaction_record.status.value,
-            message="Funds transferred successfully."
-        )
-
-    except Exception:
-        await redis.delete(redis_key)
-        raise
 
 register_veyra_routes(app, get_current_user)
+register_operations(app, get_current_user)
+
+
+@app.get("/health/ready", tags=["System"])
+async def readiness(db=Depends(get_db), redis=Depends(get_redis)):
+    try:
+        await db.execute(text("SELECT 1"))
+        await redis.ping()
+    except Exception:
+        raise HTTPException(503, "Database or cache is unavailable.")
+    return {"status": "ready", "database": "up", "redis": "up"}
+
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 

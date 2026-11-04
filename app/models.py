@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime, timezone
-from sqlalchemy import String, BigInteger, DateTime, ForeignKey, Enum, func, JSON, Integer
+from sqlalchemy import String, BigInteger, DateTime, ForeignKey, Enum, func, JSON, Integer, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -48,6 +48,7 @@ class User(Base):
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (CheckConstraint("balance >= 0 OR kind = 'clearing'", name="account_nonnegative_balance"), CheckConstraint("goal >= 0", name="account_nonnegative_goal"))
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
@@ -69,6 +70,10 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     idempotency_key: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
+    request_hash: Mapped[str | None] = mapped_column(String(64))
+    kind: Mapped[str] = mapped_column(String(32), default="transfer", server_default="transfer")
+    reference: Mapped[str] = mapped_column(String(140), default="", server_default="")
     status: Mapped[TransactionStatus] = mapped_column(
         Enum(TransactionStatus),
         default=TransactionStatus.PENDING,
@@ -83,6 +88,7 @@ class Transaction(Base):
 
 class LedgerEntry(Base):
     __tablename__ = "ledger_entries"
+    __table_args__ = (CheckConstraint("amount > 0", name="ledger_positive_amount"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     transaction_id: Mapped[int] = mapped_column(ForeignKey("transactions.id"), index=True, nullable=False)
@@ -94,3 +100,39 @@ class LedgerEntry(Base):
         default=utc_now,
         server_default=func.now()
     )
+
+
+class Beneficiary(Base):
+    __tablename__ = "beneficiaries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    name: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class ScheduledPayment(Base):
+    __tablename__ = "scheduled_payments"
+    __table_args__ = (CheckConstraint("amount > 0", name="schedule_positive_amount"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    request_key: Mapped[str] = mapped_column(String(64), unique=True)
+    request_hash: Mapped[str | None] = mapped_column(String(64))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    source_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    destination_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    amount: Mapped[int] = mapped_column(BigInteger)
+    reference: Mapped[str] = mapped_column(String(140), default="")
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="PENDING", index=True)
+    failure_reason: Mapped[str | None] = mapped_column(String(255))
+    transaction_id: Mapped[int | None] = mapped_column(ForeignKey("transactions.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    action: Mapped[str] = mapped_column(String(48))
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

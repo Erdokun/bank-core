@@ -21,7 +21,7 @@ from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from app import models, schemas, security
+from app import models, schemas, security, ledger, guards
 from app.database import get_db
 from app.redis_client import get_redis
 
@@ -63,7 +63,7 @@ async def send_otp_email_smtp(email, code, purpose="register"):
             raise RuntimeError("SMTP_HOST is not configured")
         message = EmailMessage()
         message["Subject"] = {"reset": "Reset your Veyra password", "login": "Your Veyra sign-in code", "settings": "Confirm your Veyra security change"}.get(purpose, "Your Veyra verification code")
-        message["From"] = "Veyra <no-reply@veyra.com>"
+        message["From"] = os.getenv("SMTP_FROM", "Veyra <no-reply@veyra.local>")
         message["To"] = email
         message.set_content(f"{message['Subject']}\n\nYour one-time code: {code}\n\nThis code expires in 10 minutes. If you did not request it, ignore this email.\nVeyra")
         message.add_alternative(generate_veyra_otp_email_html(code, purpose), subtype="html")
@@ -154,11 +154,11 @@ class PasswordReset(ResetRequest):
 class FxQuote(BaseModel):
     source_account_id: int = Field(gt=0)
     destination_account_id: int = Field(gt=0)
-    amount: int = Field(gt=0, le=1000000)
+    amount: int = Field(strict=True, gt=0, le=1000000)
 
 
 class FxExecute(BaseModel):
-    quote_id: str
+    quote_id: str = Field(pattern=r"^[a-f0-9]{32}$")
 
 
 def register_veyra_routes(app, current_user_dependency):
@@ -185,7 +185,8 @@ def register_veyra_routes(app, current_user_dependency):
         user = (await db.execute(select(models.User).where(models.User.email == email).with_for_update())).scalar_one_or_none()
         if not user:
             raise HTTPException(400, "Code is invalid, expired or already used.")
-        user.hashed_password = security.hash_password(payload.new_password)
+        user.hashed_password = await security.hash_password_async(payload.new_password)
+        ledger.audit(db, user.id, "auth.password_reset")
         user.token_version += 1
         await db.commit()
         return {"status": "updated"}
@@ -193,6 +194,7 @@ def register_veyra_routes(app, current_user_dependency):
     @app.patch("/auth/profile", response_model=schemas.UserResponse, tags=["Auth"])
     async def update_profile(payload: ProfileUpdate, user=Depends(current_user_dependency), db=Depends(get_db)):
         locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        ledger.audit(db, user.id, "profile.updated")
         locked.full_name = payload.full_name
         accounts = (await db.execute(select(models.Account).where(models.Account.user_id == user.id, models.Account.kind == "current").order_by(models.Account.id).with_for_update())).scalars().all()
         for account in accounts:
@@ -212,7 +214,7 @@ def register_veyra_routes(app, current_user_dependency):
     async def verify_otp(payload: schemas.OtpVerifyRequest, redis=Depends(get_redis), db=Depends(get_db)):
         email = payload.email.strip().lower()
         await consume_otp(email, payload.code, redis)
-        user = models.User(email=email, full_name=payload.full_name, hashed_password=security.hash_password(payload.password), role=models.UserRole.CUSTOMER, settings={"primary_currency": payload.primary_currency, "purpose": payload.purpose})
+        user = models.User(email=email, full_name=payload.full_name.strip(), hashed_password=await security.hash_password_async(payload.password), role=models.UserRole.CUSTOMER, settings={"primary_currency": payload.primary_currency, "purpose": payload.purpose})
         db.add(user)
         try:
             await db.flush()
@@ -239,7 +241,7 @@ def register_veyra_routes(app, current_user_dependency):
     async def update_settings(payload: SettingsUpdate, user=Depends(current_user_dependency), db=Depends(get_db), redis=Depends(get_redis)):
         updates = payload.model_dump(exclude_none=True, exclude={"password", "code"})
         if "two_factor" in updates:
-            if not payload.password or not security.verify_password(payload.password, user.hashed_password):
+            if not payload.password or not await security.verify_password_async(payload.password, user.hashed_password):
                 raise HTTPException(401, "Confirm your current password to change two-factor authentication.")
             if not payload.code:
                 await issue_otp(user.email, redis, "settings")
@@ -250,6 +252,7 @@ def register_veyra_routes(app, current_user_dependency):
             raise HTTPException(422, "Choose a PNG, JPEG or WebP avatar.")
         # Row lock prevents unrelated preference updates from overwriting each other.
         locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        ledger.audit(db, user.id, "settings.updated", fields=list(updates))
         locked.settings = {**locked.settings, **updates}
         await db.commit()
         return locked.settings
@@ -257,9 +260,10 @@ def register_veyra_routes(app, current_user_dependency):
     @app.post("/auth/password", tags=["Auth"])
     async def change_password(payload: PasswordChange, user=Depends(current_user_dependency), db=Depends(get_db)):
         locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
-        if not security.verify_password(payload.current_password, locked.hashed_password):
+        if not await security.verify_password_async(payload.current_password, locked.hashed_password):
             raise HTTPException(401, "Your current password is incorrect.")
-        locked.hashed_password = security.hash_password(payload.new_password)
+        locked.hashed_password = await security.hash_password_async(payload.new_password)
+        ledger.audit(db, locked.id, "auth.sessions_revoked")
         locked.token_version += 1
         await db.commit()
         return {"access_token": security.create_access_token(locked.id, locked.email, locked.role.value, locked.token_version)}
@@ -267,12 +271,14 @@ def register_veyra_routes(app, current_user_dependency):
     @app.post("/auth/sessions/revoke", tags=["Auth"])
     async def revoke_sessions(user=Depends(current_user_dependency), db=Depends(get_db)):
         locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        ledger.audit(db, locked.id, "auth.sessions_revoked")
         locked.token_version += 1
         await db.commit()
         return {"status": "revoked"}
 
     @app.post("/fx/quote", tags=["Exchange"])
     async def quote_fx(payload: FxQuote, user=Depends(current_user_dependency), db=Depends(get_db), redis=Depends(get_redis)):
+        guards.require_customer(user)
         accounts = (await db.execute(select(models.Account).where(models.Account.id.in_([payload.source_account_id, payload.destination_account_id]), models.Account.user_id == user.id, models.Account.kind == "current"))).scalars().all()
         if len(accounts) != 2:
             raise HTTPException(400, "Choose two of your currency accounts.")
@@ -299,6 +305,11 @@ def register_veyra_routes(app, current_user_dependency):
 
     @app.post("/fx/swap", tags=["Exchange"])
     async def swap_fx(payload: FxExecute, user=Depends(current_user_dependency), db=Depends(get_db), redis=Depends(get_redis)):
+        guards.require_customer(user)
+        idem = "fx:" + payload.quote_id
+        existing = (await db.execute(select(models.Transaction).where(models.Transaction.idempotency_key == idem, models.Transaction.user_id == user.id))).scalar_one_or_none()
+        if existing:
+            return {"status": "COMPLETED", "transaction_id": existing.id}
         raw = await redis.get(f"veyra:fx:{payload.quote_id}")
         if not raw:
             raise HTTPException(409, "This quote has expired. Get a new quote.")
@@ -312,32 +323,24 @@ def register_veyra_routes(app, current_user_dependency):
         existing = (await db.execute(select(models.Transaction).where(models.Transaction.idempotency_key == idem))).scalar_one_or_none()
         if existing:
             return {"status": "COMPLETED", "transaction_id": existing.id}
-        # Treasury accounts preserve a balanced journal in each settlement currency.
-        treasury = (await db.execute(select(models.User).where(models.User.email == "treasury@internal.veyra.invalid"))).scalar_one_or_none()
-        if not treasury:
-            await db.execute(text("SELECT pg_advisory_xact_lock(82764001)"))
-            treasury = (await db.execute(select(models.User).where(models.User.email == "treasury@internal.veyra.invalid"))).scalar_one_or_none()
-            if not treasury:
-                treasury = models.User(email="treasury@internal.veyra.invalid", full_name="Veyra FX Clearing", hashed_password=security.hash_password(secrets.token_urlsafe(48)), role=models.UserRole.CUSTOMER)
-                db.add(treasury)
-                await db.flush()
-                for currency in CURRENCIES:
-                    db.add(models.Account(user_id=treasury.id, account_number=generate_iban(currency), owner_name="FX clearing", currency=currency, kind="clearing", balance=0))
-                await db.flush()
-        treasury_accounts = (await db.execute(select(models.Account).where(models.Account.user_id == treasury.id))).scalars().all()
+        # Balanced journal entries in each currency, using shared clearing accounts.
+        source_account = await db.get(models.Account, quote["source_account_id"])
+        dest_account = await db.get(models.Account, quote["destination_account_id"])
+        treasury_accounts = [await ledger.clearing_account(db, source_account.currency), await ledger.clearing_account(db, dest_account.currency)]
         ids = [quote["source_account_id"], quote["destination_account_id"]] + [a.id for a in treasury_accounts]
         accounts = (await db.execute(select(models.Account).where(models.Account.id.in_(ids)).order_by(models.Account.id).with_for_update().execution_options(populate_existing=True))).scalars().all()
         by_id = {a.id: a for a in accounts}
         source, dest = by_id[quote["source_account_id"]], by_id[quote["destination_account_id"]]
         if source.balance < quote["amount"]:
             raise HTTPException(400, "Insufficient available balance.")
-        clearing_source = next(a for a in accounts if a.user_id == treasury.id and a.currency == source.currency)
-        clearing_dest = next(a for a in accounts if a.user_id == treasury.id and a.currency == dest.currency)
-        tx = models.Transaction(idempotency_key=idem, status=models.TransactionStatus.COMPLETED)
+        clearing_source = next(a for a in accounts if a.kind == "clearing" and a.currency == source.currency)
+        clearing_dest = next(a for a in accounts if a.kind == "clearing" and a.currency == dest.currency)
+        tx = models.Transaction(user_id=user.id, kind="exchange", reference="Currency exchange", idempotency_key=idem, status=models.TransactionStatus.COMPLETED)
         db.add(tx)
         await db.flush()
         for account, amount, direction in [(source, quote["amount"], "DEBIT"), (clearing_source, quote["amount"], "CREDIT"), (clearing_dest, quote["received"], "DEBIT"), (dest, quote["received"], "CREDIT")]:
             account.balance += amount if direction == "CREDIT" else -amount
             db.add(models.LedgerEntry(transaction_id=tx.id, account_id=account.id, amount=amount, entry_type=models.EntryType(direction)))
+        ledger.audit(db, user.id, "payment.exchange", transaction_id=tx.id)
         await db.commit()
         return {"status": "COMPLETED", "transaction_id": tx.id}

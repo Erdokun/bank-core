@@ -1,101 +1,84 @@
-# Bank Core Ledger API
+# Veyra · Bank Core
 
-A high-concurrency, double-entry core banking transaction engine built with **FastAPI**, **PostgreSQL**, **SQLAlchemy 2.0 (Async)**, and **Redis**. Designed to guarantee strict ACID compliance, zero race conditions under parallel load, and sub-millisecond idempotency protection.
+A backend-focused banking portfolio project built with FastAPI, PostgreSQL, SQLAlchemy asyncio and Redis. The web application is a client of the same authenticated API exposed in Swagger.
 
----
+## Start locally
 
-## Core Engineering Highlights
-
-* **Double-Entry Bookkeeping (Audit Trail):** Every fund transfer generates immutable, balanced `DEBIT` and `CREDIT` ledger records within a single atomic transaction, ensuring complete financial auditability.
-* **Race Condition Elimination (Pessimistic Locking):** Utilizes PostgreSQL row-level locks (`SELECT ... FOR UPDATE`) to serialize concurrent balance mutations and prevent overdrafts under high-concurrency stress.
-* **Deterministic Deadlock Prevention:** Acquires database row locks in a strict ascending account ID order (`min(id)`, `max(id)`), mathematically eliminating circular wait conditions when two accounts transfer funds to each other simultaneously.
-* **Two-Tier Idempotency (Redis + PostgreSQL):** Implements a Redis fast-path cache (`SET NX EX`) in front of PostgreSQL unique constraints to intercept duplicate network retries in ~3ms without saturating database connections.
-* **Zero Floating-Point Drift:** All monetary values are stored and processed as `BIGINT` in minor currency units (cents) to prevent IEEE 754 floating-point rounding errors.
-* **Request Tracing & Observability:** Custom HTTP middleware injects a unique `X-Request-ID` correlation header and logs execution latency (`X-Process-Time-Ms`) across every transaction.
-
----
-
-## Tech Stack
-
-* **Backend Framework:** Python 3.12+, FastAPI, Pydantic v2
-* **Database & ORM:** PostgreSQL 16, SQLAlchemy 2.0 (Asyncio + `asyncpg`)
-* **Caching & Locking:** Redis 7 (`redis-py` async)
-* **Infrastructure & CI:** Docker, Docker Compose, GitHub Actions
-* **Testing:** `pytest`, `pytest-asyncio`, `httpx`
-
----
-
-## Quick Start (Docker Compose)
-
-The entire stack (FastAPI, PostgreSQL 16, Redis 7) is fully containerized.
-
-### 1. Build and start the services
-```bash
-docker compose up --build -d
+```sh
+docker compose up --build -d --wait
 ```
 
-### 2. Initialize the database schema
-```bash
-docker exec bank_api python init_db.py
+Migrations run automatically. Existing database volumes are preserved.
+
+- Application: [localhost:8000](http://localhost:8000/)
+- API documentation: [localhost:8000/docs](http://localhost:8000/docs)
+- Development email inbox: [localhost:8025](http://localhost:8025/)
+- Dependency readiness: [localhost:8000/health/ready](http://localhost:8000/health/ready)
+
+Choose **Get started**, enter a test email, and read its verification code in the local inbox. Verified registration provisions EUR, USD, GBP and TRY accounts with zero balances. Open **Payments hub → Add money** to fund a test balance. These credits are recorded against sandbox clearing accounts, with equal debit and credit entries.
+
+**Explore the demo** is a separate browser-local preview. Its sample money never becomes an authenticated account balance. The Payments hub requires a backend account.
+
+Compose enables `BANK_SANDBOX=true` for development. It captures emails in Mailpit rather than forwarding them to external recipients. No real card is charged and no real bank account or payment card is issued.
+
+## What works
+
+| Area | Behavior |
+| --- | --- |
+| Accounts | Four settlement currencies, ownership checks, savings spaces, deposits and withdrawals between owned accounts |
+| Transfers | Atomic settlement, positive integer minor units, ordered row locks, durable per-user idempotency and request fingerprint checks |
+| Currency exchange | Reviewed, expiring Frankfurter reference-rate quotes; four balanced journal legs; durable execution replay |
+| Sandbox card | Online purchases, contactless and ATM simulations; freeze/channel controls, per-payment contactless limit, aggregate daily spending and ATM limits |
+| Recipients | Database-backed saved recipients, lookup by internal IBAN/Veyra ID, removal and send shortcuts |
+| Scheduled payments | Idempotent one-time scheduling, cancellation while pending, automatic server execution, persisted completion/failure reason |
+| Audit | Immutable account event history, transaction references and balance-to-journal reconciliation |
+| Authentication | Argon2id, signed and expiring JWTs, normalized emails, email OTP, optional two-step sign-in, password changes/reset and global session revocation |
+| Workspace | Light/dark appearance, profile/avatar, balance privacy, idle sign-out, currency preference, budgets, transaction filters and CSV export |
+| Landing page | Procedural galaxy, stars with perspective and parallax, shooting stars, pause control and reduced-motion fallback |
+
+Card limits are measured in each selected account's currency. Daily limits reset at 00:00 UTC. A scheduled payment does not reserve funds: the balance is checked when the worker executes it, and insufficient funds produce a persisted `FAILED` result. The worker polls every ten seconds while the API is running and processes overdue payments after a restart. Multiple workers use `FOR UPDATE SKIP LOCKED`; cancelled and completed records cannot execute again.
+
+## Backend design
+
+```text
+Authenticated request
+    → Pydantic validation / ownership / Redis rate limits
+    → PostgreSQL advisory lock for user + idempotency key
+    → Verify request fingerprint and return an existing settlement if present
+    → Lock participating accounts in ascending ID order
+    → Validate balance and settlement currency
+    → Update balances + append debit/credit journal + append audit event
+    → COMMIT (deferred database trigger verifies balance per currency)
 ```
 
-### 3. Explore the interactive API documentation
-Open your browser and navigate to:
-* **Swagger UI:** `http://127.0.0.1:8000/docs`
-* **Health Check:** `http://127.0.0.1:8000/health`
+`app/ledger.py` owns the shared posting path for transfers, sandbox funding, card settlement and scheduled payments. PostgreSQL is the authority for idempotency; Redis is used for rate windows and expiring OTP/FX data. A lost HTTP response can be retried with the **same** key without posting a second debit. Reusing the key with a different amount, destination or reference returns `409`. Separate users can use the same client key.
 
----
+Database constraints reject negative customer balances and nonpositive journal amounts. Deferred triggers reject empty/unbalanced new journals at commit, and mutation triggers reject updates/deletes to ledger and audit entries. Clearing accounts may carry negative balances to represent the sandbox counterparty. Existing historical balances are preserved; reconciliation reports any difference from legacy opening balances rather than inventing journal entries.
 
-## Running Automated Tests
+Public registration cannot assign the auditor role, and account creation cannot mint an initial balance. The direct `/auth/register` convenience endpoint is sandbox-only; verified OTP onboarding remains the normal UI flow. Auditor provisioning is a trusted administration task, with no public role-change endpoint.
 
-The Veyra interface is served at `http://127.0.0.1:8000/`. Its public landing page
-always uses dark mode. The personal workspace supports pure black/white light
-and dark themes, saved profile/preferences, monthly cash flow and budgets,
-transaction search/filters, CSV exports, balance privacy and an inactivity lock.
-The explicit demo uses browser-local sample data; live accounts never use demo
-balances. Card issuance and external card funding are not connected.
+Argon2 hashing runs in bounded background threads rather than blocking the event loop. Missing-user login also verifies a dummy hash. Password rotation/reset and **Sign out all devices** increment the user's token version. OTP codes are stored as HMAC digests, are limited to five verification attempts, expire after ten minutes and can be consumed once. Request IDs, timing headers and security headers support tracing without logging request bodies, tokens or passwords.
 
-Configure the SMTP values in `.env.example` to enable signup, two-step sign-in
-and password-reset emails. Password changes and resets revoke prior tokens.
-Preferences and profile changes use the existing user settings storage; no new
-database migration is needed.
+## Validation
 
-The dark home page has a separate native WebGL Earth scene with rotation,
-clouds, atmospheric lighting and pointer depth. It pauses outside the viewport,
-in the dashboard and in background tabs; reduced-motion preferences are
-respected. The original Earth video/poster provides a fallback. All scene assets
-are served locally. Veyra wordmarks return to the home page while keeping the
-session open, including on mobile.
+```sh
+# PostgreSQL/Redis integration, email onboarding and database invariants
+docker compose exec -T api python -m pytest tests -q
 
-Optional GPU-only visual QA: install `moderngl` and `Pillow` in the development
-environment and run `python tests/render_hero.py`. This compiles the scene shader
-and saves desktop, rotated and mobile renders to the system temporary directory.
-These packages are not application/runtime dependencies.
+# An independent 10-request overdraft/conservation demonstration
+docker compose exec -T api python test_concurrency.py
 
-For frontend interaction regressions, run `npm ci` followed by `npm test`.
-For all API and workspace checks against the running local services, run
-`python -m pytest tests -q` in the Python environment.
-
-### 1. Integration & Idempotency Test Suite (`pytest`)
-Run the automated test suite directly inside the isolated container environment:
-```bash
-docker exec bank_api pytest -v
+# DOM interaction and galaxy lifecycle checks (Node.js 24)
+npm ci
+npm test
 ```
 
-### 2. High-Concurrency Race Condition Stress Test
-Simulates 10 simultaneous transfer requests fired at the exact same millisecond against a limited account balance to verify `SELECT ... FOR UPDATE` row locking:
-```bash
-python test_concurrency.py
-```
+The tests cover concurrent debits, opposing transfers, duplicate retries, ownership, privilege escalation, currency mismatches, card controls/aggregate limits, recipient isolation, scheduled completion/cancellation/failure, immutable journals, FX replay, email registration/2FA/reset and session revocation. Frontend tests cover persisted preferences, savings, quote confirmation, payments, recipients, schedules, reconciliation and animation suspension. CI runs backend and frontend checks.
 
----
+## Environment and boundaries
 
-## API Endpoints Overview
+See `.env.example`. Compose binds application, database, Redis and the mail inbox to localhost. For an externally deployed environment, set `APP_ENV=production`, `BANK_SANDBOX=false`, a unique `JWT_SECRET_KEY` of at least 32 characters, and an authenticated SMTP sender with TLS. Startup rejects short/default production signing keys and production sandbox funding. TLS termination, managed secrets, backups, external monitoring and deployment-specific operations still need configuration.
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/health` | Service health check and latency tracing headers |
-| `POST` | `/accounts` | Provision a new bank account with an initial balance (in cents) |
-| `GET` | `/accounts/{id}` | Retrieve current account details and real-time balance |
-| `GET` | `/accounts/{id}/statement` | Fetch full double-entry (`DEBIT`/`CREDIT`) audit trail |
-| `POST` | `/transfers` | Execute an atomic, idempotent funds transfer between accounts |
+External SEPA/SWIFT/FAST settlement, card-network authorization/issuance, real card funding, identity verification, regulatory reporting, loans and investment trading are not integrated. The transfer amount ceiling is a configurable project guard, not a complete AML/compliance system. Frankfurter supplies daily reference rates, not executable market liquidity. The project is a banking sandbox and an engineering portfolio, not a licensed production bank.
+
+Local email testing uses [Mailpit's API](https://mailpit.axllent.org/docs/api-v1/). The galaxy is generated in the browser without Earth textures or a 3D library. Inter is requested from Google Fonts with a system-font fallback.

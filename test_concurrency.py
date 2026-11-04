@@ -1,68 +1,32 @@
+"""Self-contained concurrency proof using newly provisioned sandbox accounts."""
 import asyncio
-import httpx
 import uuid
+import httpx
 
-BASE_URL = "http://127.0.0.1:8000"
-
-async def fire_transfer(client: httpx.AsyncClient, request_id: int):
-    """
-    Sends a single transfer request to the API concurrently.
-    """
-    payload = {
-        "source_account_id": 1,
-        "destination_account_id": 2,
-        "amount": 5000,  # 50.00 EUR per attempt
-        "idempotency_key": f"stress-test-{uuid.uuid4().hex}"
-    }
-
-    try:
-        response = await client.post(f"{BASE_URL}/transfers", json=payload, timeout=10.0)
-        return request_id, response.status_code, response.json()
-    except Exception as exc:
-        return request_id, 500, str(exc)
 
 async def run_stress_test():
-    """
-    Dispatches 10 simultaneous transfer requests to stress-test race conditions.
-    """
-    print("\n--- Starting High-Concurrency Transfer Stress Test ---")
-    print("Account 1 Balance: 35,000 cents (350 EUR)")
-    print("Firing 10 concurrent requests of 5,000 cents each (Total requested: 50,000 cents)...\n")
+    async with httpx.AsyncClient(base_url='http://127.0.0.1:8000',timeout=20) as client:
+        email=f'load_{uuid.uuid4().hex}@example.com';password='ConcurrencyProof123!'
+        registered=await client.post('/auth/register',json=dict(email=email,password=password,full_name='Concurrency Proof'))
+        registered.raise_for_status()
+        login=await client.post('/auth/login',json=dict(email=email,password=password));login.raise_for_status()
+        headers={'Authorization':'Bearer '+login.json()['access_token']}
+        accounts=[]
+        for _ in range(2):
+            r=await client.post('/accounts',headers=headers,json={});r.raise_for_status();accounts.append(r.json())
+        source,destination=accounts
+        funded=await client.post('/sandbox/funding',headers=headers,json=dict(account_id=source['id'],amount=35000,idempotency_key=uuid.uuid4().hex));funded.raise_for_status()
+        results=await asyncio.gather(*[client.post('/transfers',headers=headers,json=dict(source_account_id=source['id'],destination_account_id=destination['id'],amount=5000,idempotency_key=uuid.uuid4().hex)) for _ in range(10)])
+        successes=sum(r.status_code==200 for r in results);rejections=sum(r.status_code==400 for r in results)
+        after=(await client.get('/accounts/me',headers=headers)).json()
+        conserved=sum(a['balance'] for a in after)==35000
+        nonnegative=all(a['balance']>=0 for a in after)
+        print(f'10 parallel requests: {successes} settled, {rejections} rejected')
+        print(f'Money conserved: {conserved}; no overdraft: {nonnegative}')
+        if (successes,rejections)!=(7,3) or not conserved or not nonnegative:
+            raise SystemExit('Concurrency invariant failed')
+        print('PASS')
 
-    async with httpx.AsyncClient() as client:
-        # Create 10 concurrent asynchronous transfer tasks
-        tasks = [fire_transfer(client, i + 1) for i in range(10)]
-        
-        # Fire all 10 requests at the exact same millisecond
-        results = await asyncio.gather(*tasks)
 
-    success_count = 0
-    failure_count = 0
-
-    for req_id, status_code, body in sorted(results, key=lambda x: x[0]):
-        if status_code == 200:
-            success_count += 1
-            print(f"[SUCCESS] Request #{req_id}: Status 200 - Transferred 5,000 cents successfully.")
-        else:
-            failure_count += 1
-            detail = body.get("detail", "Error") if isinstance(body, dict) else body
-            print(f"[REJECTED] Request #{req_id}: Status {status_code} - Reason: {detail}")
-
-    print("\n--- Stress Test Summary ---")
-    print(f"Total Requests Processed : 10")
-    print(f"Successful Transfers     : {success_count} (Expected: 7)")
-    print(f"Rejected Requests        : {failure_count} (Expected: 3)")
-
-    # Fetch final balance of Account 1 to prove data consistency
-    async with httpx.AsyncClient() as client:
-        res = await client.get(f"{BASE_URL}/accounts/1")
-        final_balance = res.json().get("balance")
-        print(f"Final Balance of Account 1: {final_balance} cents (Expected: 0 cents)")
-
-    if success_count == 7 and final_balance == 0:
-        print("\nPASSED: Zero race conditions detected. Pessimistic locking verified.")
-    else:
-        print("\nFAILED: Inconsistent state detected.")
-
-if __name__ == "__main__":
+if __name__=='__main__':
     asyncio.run(run_stress_test())

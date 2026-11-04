@@ -88,9 +88,9 @@ async def test_password_reset_requires_single_use_code_and_revokes_old_sessions(
     from app.database import get_db
     from app.redis_client import get_redis
     from app import veyra, security
-    user = SimpleNamespace(hashed_password=security.hash_password("BeforeReset123!"), token_version=4)
+    user = SimpleNamespace(id=1, hashed_password=security.hash_password("BeforeReset123!"), token_version=4)
     result = SimpleNamespace(scalar_one_or_none=lambda: user)
-    db = SimpleNamespace(execute=AsyncMock(return_value=result), commit=AsyncMock())
+    db = SimpleNamespace(execute=AsyncMock(return_value=result), commit=AsyncMock(), add=lambda event: None)
     consume = AsyncMock()
     monkeypatch.setattr(veyra, "consume_otp", consume)
     app.dependency_overrides[get_db] = lambda: db

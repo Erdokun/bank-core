@@ -7,3 +7,6 @@ __pycache__/
 frontend/
 index.html
 .env
+
+node_modules/
+Veyra.zip

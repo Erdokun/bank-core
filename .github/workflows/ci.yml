@@ -14,11 +14,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install frontend test dependencies
+        run: npm ci
+
+      - name: Run frontend interaction checks
+        run: npm test
+
       - name: Start multi-container environment
         run: docker compose up --build --wait --wait-timeout 120
 
       - name: Run automated pytest suite inside container
         run: docker compose exec -T api pytest -v
+
+      - name: Verify concurrent balance conservation
+        run: docker compose exec -T api python test_concurrency.py
 
       - name: Show container logs on failure
         if: failure()
