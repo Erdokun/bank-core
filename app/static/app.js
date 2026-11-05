@@ -8,6 +8,7 @@ var $=function(s,r){return (r||document).querySelector(s);};
 var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
 var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
 var reduceMotion=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+function motionReduced(){return reduceMotion||document.documentElement.dataset.reducedMotion==='true';}
 function uuid(){
   if(window.crypto&&crypto.randomUUID) return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);});
@@ -92,12 +93,13 @@ var Modals={
   open:function(id){
     var el=document.getElementById(id); if(!el) return;
     if(this.stack.some(function(s){return s.el===el;})) return;
+    clearTimeout(el._veyraCloseTimer);
     this.stack.push({el:el,ret:document.activeElement});
     el.hidden=false;
-    requestAnimationFrame(function(){el.classList.add('is-open');});
+    requestAnimationFrame(function(){if(Modals.stack.some(function(s){return s.el===el;}))el.classList.add('is-open');});
     setTimeout(function(){
-      var f=el.querySelector('[data-autofocus]')||el.querySelector('input:not([type=hidden]):not([readonly]):not([type=radio]):not([type=range]),select,textarea');
-      if(f&&f.offsetParent!==null) f.focus();
+      var f=el.querySelector('[data-autofocus]')||Array.from(el.querySelectorAll('input:not([type=hidden]):not([readonly]):not([type=radio]):not([type=range]),select,textarea')).find(function(field){return field.getClientRects().length>0;});
+      if(f&&f.offsetParent!==null&&Modals.stack.some(function(s){return s.el===el;})) f.focus();
     },80);
   },
   close:function(id){
@@ -106,8 +108,10 @@ var Modals={
     var idx=-1;this.stack.forEach(function(s,i){if(s.el===el) idx=i;});
     var entry=idx>-1?this.stack.splice(idx,1)[0]:null;
     el.classList.remove('is-open');
-    setTimeout(function(){el.hidden=true;},230);
+    clearTimeout(el._veyraCloseTimer);el._veyraCloseTimer=setTimeout(function(){el.hidden=true;},350);
     if(el.id==='m-register'){Otp.teardown();Otp.password=null;$('#rgPass').value='';}
+    if(el.id==='m-signin'){clearInterval(signInResendTimer);$('#siPass').value='';$('#siCode').value='';}
+    if(el.id==='m-delete'){DeleteFlow.generation++;$('#deletePassword').value='';$('#deleteCode').value='';$('#deleteConfirmation').value='';}
     if(entry&&entry.ret&&entry.ret.focus&&document.body.contains(entry.ret)) setTimeout(function(){entry.ret.focus();},10);
   }
 };
@@ -181,7 +185,7 @@ async function setTheme(theme,persist){
   var previous=document.documentElement.dataset.theme||'dark';
   document.documentElement.dataset.theme=theme;
   try{localStorage.setItem('veyra-theme',theme);}catch(e){}
-  $$('.theme-toggle').forEach(function(b){b.setAttribute('aria-label',theme==='light'?'Switch to dark mode':'Switch to light mode');});
+  $$('.theme-toggle').forEach(function(b){b.setAttribute('aria-label',theme==='light'?'Switch to dark mode':'Switch to light mode');b.setAttribute('aria-pressed',String(theme==='light'));var icon=b.querySelector('use');if(icon)icon.setAttribute('href',theme==='light'?'#i-moon':'#i-sun');});
   if($('#prefTheme'))$('#prefTheme').value=theme;
   if(persist&&Session.user&&!await saveProfileSettings({theme:theme}))setTheme(previous,false);
 }
@@ -194,10 +198,12 @@ function openSignIn(){
   if(Session.token){App.open();return;}
   $('#siErr').textContent='';
   $('#siCode').value='';$('#siCodeField').hidden=true;
+  $('#siBtn').textContent='Sign in';
   Modals.open('m-signin');
 }
 function openRegister(){
-  if(Session.token){App.open();return;}
+  if(Session.token&&Session.mode==='live'){App.open();return;}
+  if(Session.mode==='demo'){Session.clear();App.close();}
   showRegStep(1);$('#rgErr').textContent='';
   Modals.open('m-register');
 }
@@ -206,6 +212,16 @@ function showRegStep(n){
   $('#regStep2').hidden=n!==2;
 }
 var EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+var signInResendTimer=null;
+function signInResendCooldown(){
+ clearInterval(signInResendTimer);var remaining=60,button=$('#siResend');button.disabled=true;button.textContent='Resend code in 60s';
+ signInResendTimer=setInterval(function(){remaining--;button.textContent=remaining>0?'Resend code in '+remaining+'s':'Resend code';button.disabled=remaining>0;if(remaining<=0)clearInterval(signInResendTimer);},1000);
+}
+$('#siResend').addEventListener('click',async function(){
+ var button=this;button.disabled=true;$('#siErr').textContent='';
+ var result=await api('/auth/login',{method:'POST',auth:false,body:{email:$('#siEmail').value.trim().toLowerCase(),password:$('#siPass').value,code:null}});
+ if(result.status===428){$('#siCode').value='';signInResendCooldown();toast('A new sign-in code is on its way.');}else{button.disabled=false;$('#siErr').textContent=apiErr(result);}
+});
 
 $('#signinForm').addEventListener('submit',async function(e){
   e.preventDefault();
@@ -216,7 +232,7 @@ $('#signinForm').addEventListener('submit',async function(e){
   btnBusy(btn,true,'Signing in…');
   var r=await api('/auth/login',{method:'POST',auth:false,body:{email:email,password:pass,code:$('#siCode').value||null}});
   if(r.offline){btnBusy(btn,false);err.textContent='The service is unavailable. Please try again, or explore the demo.';return;}
-  if(r.status===428){btnBusy(btn,false);$('#siCodeField').hidden=false;$('#siCode').focus();err.textContent='A 6-digit code was sent to your email. Enter it to finish signing in.';return;}
+  if(r.status===428){btnBusy(btn,false);btn.textContent='Verify & sign in';$('#siCodeField').hidden=false;$('#siCode').focus();signInResendCooldown();err.textContent='A 6-digit code was sent to your email. Enter it to finish signing in.';return;}
   if(!r.ok){btnBusy(btn,false);err.textContent=apiErr(r);return;}
   Session.token=r.data.access_token;Session.mode='live';
   var me=await api('/auth/me');
@@ -230,6 +246,7 @@ $('#signinForm').addEventListener('submit',async function(e){
 function openDemo(){
   var user={id:0,email:'demo@veyra.local',full_name:'Alex Morgan',created_at:new Date().toISOString(),settings:{}};
   try{var saved=JSON.parse(localStorage.getItem('veyra-demo-profile')||'null');if(saved)user=saved;}catch(e){}
+  user.settings=Object.assign({},user.settings||{},{theme:document.documentElement.dataset.theme||'dark'});
   Session.start(demoJwt(user),'demo',user);Modals.close('m-signin');Modals.close('m-register');App.open();
   toast('Demo workspace · sample money only.');
 }
@@ -376,24 +393,16 @@ function ago(days,h,m){var d=new Date();d.setDate(d.getDate()-days);d.setHours(h
 function defaultState(){
   return {
     v:2,
-    wallets:{EUR:450,USD:1250,TRY:42500,GBP:320},
+    balanceRevision:1,
+    wallets:{EUR:0,USD:0,TRY:0,GBP:0},
     active:'EUR',
     liveOffset:0,
     card:{frozen:false,online:true,limits:{daily:2500,nfc:50,atm:1000}},
     spaces:[
-      {id:'s1',name:'Yaz Tatili',goal:2000,saved:640,cur:'EUR',icon:'sun'},
-      {id:'s2',name:'Acil Durum Fonu',goal:5000,saved:1850,cur:'EUR',icon:'shield'}
+      {id:'s1',name:'Yaz Tatili',goal:2000,saved:0,cur:'EUR',icon:'sun'},
+      {id:'s2',name:'Acil Durum Fonu',goal:5000,saved:0,cur:'EUR',icon:'shield'}
     ],
-    activity:[
-      {id:'a1',t:ago(0,9,12),title:'Card Top-Up',sub:'Mastercard •• 9010',cat:'topup',amt:100,cur:'EUR'},
-      {id:'a2',t:ago(0,8,41),title:'Blue Bottle Coffee',sub:'Card payment · Berlin',cat:'coffee',amt:-5,cur:'EUR'},
-      {id:'a3',t:ago(1,18,20),title:'Transfer to #2',sub:'Selin Kaya · FAST',cat:'transfer',amt:-100,cur:'EUR'},
-      {id:'a4',t:ago(1,12,5),title:'Migros',sub:'Groceries · İstanbul',cat:'grocery',amt:-842.5,cur:'TRY'},
-      {id:'a5',t:ago(2,16,30),title:'Converted USD to EUR',sub:'$250.00 at 0.9223',cat:'fx',amt:230.58,cur:'EUR'},
-      {id:'a6',t:ago(3,9,0),title:'Salary',sub:'Veyra Holdings A.Ş.',cat:'salary',amt:38000,cur:'TRY'},
-      {id:'a7',t:ago(4,20,15),title:'Spotify Premium',sub:'Subscription',cat:'sub',amt:-10.99,cur:'GBP'},
-      {id:'a8',t:ago(5,13,40),title:'Whole Foods Market',sub:'Groceries · New York',cat:'grocery',amt:-64.2,cur:'USD'}
-    ],
+    activity:[],
     liveLabels:{}
   };
 }
@@ -401,11 +410,17 @@ var S=defaultState();
 var Live={accounts:[],primary:null,entries:[]};
 function stateKey(){return 'veyra_state_v2:'+((Session.user&&Session.user.email)||'guest');}
 function loadState(){
+  if(Session.mode==='live'){S=defaultState();S.spaces=[];try{localStorage.removeItem(stateKey());}catch(e){}return;}
   try{var raw=localStorage.getItem(stateKey());S=raw?JSON.parse(raw):defaultState();if(!S||S.v!==2) S=defaultState();}
   catch(e){S=defaultState();}
-  if(Session.mode==='live'){S.wallets={EUR:0,USD:0,TRY:0,GBP:0};S.spaces=[];S.activity=[];S.liveOffset=0;}
+  if(S.balanceRevision!==1){S.balanceRevision=1;S.wallets={EUR:0,USD:0,TRY:0,GBP:0};S.spaces.forEach(function(space){space.saved=0;});S.activity=[];saveState();}
 }
-function saveState(){try{localStorage.setItem(stateKey(),JSON.stringify(S));}catch(e){}}
+function saveState(){if(Session.mode==='live')return;try{localStorage.setItem(stateKey(),JSON.stringify(S));}catch(e){}}
+function selectedLiveAccount(currency){var id=(preferences().selected_accounts||{})[currency];return Live.accounts.find(function(a){return a.kind==='current'&&a.currency===currency&&a.id===id;})||Live.accounts.find(function(a){return a.kind==='current'&&a.currency===currency;})||null;}
+function applyLiveAccounts(accounts){
+ Live.accounts=accounts;Object.keys(S.wallets).forEach(function(c){var account=selectedLiveAccount(c);S.wallets[c]=account?account.balance/100:0;});
+ S.spaces=accounts.filter(function(a){return a.kind==='space';}).map(function(a){return {id:String(a.id),name:a.owner_name,goal:a.goal/100,saved:a.balance/100,cur:a.currency,icon:'shield',live:true};});Live.primary=selectedLiveAccount(S.active);
+}
 function isLive(){return Session.mode==='live'&&!!Live.primary;}
 function adjust(cur,delta){
   S.wallets[cur]=Math.round((S.wallets[cur]+delta)*100)/100;
@@ -418,7 +433,7 @@ function logActivity(a){
   if(S.activity.length>80) S.activity.length=80;
 }
 function ibanFor(cur){
-  var live=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===cur;});
+  var live=selectedLiveAccount(cur);
   if(live) return groupIban(live.account_number);
   return Session.mode==='live'?'Account not available':DEMO_IBAN[cur];
 }
@@ -439,6 +454,8 @@ function renderHeader(){
   var u=Session.user||{full_name:'Guest',email:''};
   $('#workspaceStatus').textContent=Session.mode==='live'?'Personal workspace · Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'Demo workspace · Sample money only';
   $('#securitySummary').textContent=(u.settings||{}).two_factor?'Two-step sign-in is enabled. Review your password and session controls anytime.':'Add an email verification code to your sign-in for another layer of protection.';
+  $('#securityStateTitle').textContent=(u.settings||{}).two_factor?'Two-step sign-in is enabled':'Add another layer of protection';
+  $('#securityStateDescription').textContent=(u.settings||{}).two_factor?'Your password and a one-time email code protect your sign-in.':'Enable an email code after your password to protect your account.';
   $('#uName').textContent=u.full_name;$('#uEmail').textContent=u.email;$('#uAvatar').textContent=initials(u.full_name);
   $('#greetSm').textContent=greeting();$('#greetH').textContent=firstName(u.full_name);
   var live=Session.mode==='live';
@@ -446,15 +463,16 @@ function renderHeader(){
   $('#modeText').textContent=live?'Personal account':'Demo workspace';
   $('#modeChip').title=live?'Your personal Veyra workspace':'Sample money · saved on this device';
   var total=0;Object.keys(S.wallets).forEach(function(c){total+=toCur(S.wallets[c],c,S.active);});
-  $('#totalCaption').textContent=live?'Available in your '+S.active+' account':'Total across currencies · indicative';
-  $('#totalAll').textContent=live?money(S.wallets[S.active],S.active):'≈ '+money(total,S.active);
+  $('#totalCaption').textContent=live?'Total in your '+S.active+' accounts':'Total across currencies · indicative';
+  $('#totalAll').textContent=live?money(Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===S.active;}).reduce(function(sum,a){return sum+a.balance/100;},0),S.active):'≈ '+money(total,S.active);
 }
 function renderCurrencies(){
   $$('#curRow .cur').forEach(function(b){
     var c=b.dataset.cur;
     b.setAttribute('aria-selected',c===S.active?'true':'false');
     b.tabIndex=c===S.active?0:-1;
-    $('[data-bal]',b).textContent=money(S.wallets[c],c);
+    var balance=Session.mode==='live'?Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===c;}).reduce(function(sum,a){return sum+a.balance/100;},0):S.wallets[c];
+    $('[data-bal]',b).textContent=money(balance,c);
   });
 }
 function renderBalance(){
@@ -469,6 +487,9 @@ function renderBalance(){
   $('#acctHolder').textContent=(Session.user&&Session.user.full_name)||'—';
   $('#acctId').textContent=isLive()?('VY-'+Live.primary.id):Session.mode==='live'?'Unavailable':'Demo';
   $('#filterCurBtn').textContent=c+' only';
+  var accounts=Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===c;}),select=$('#accountSelect');select.hidden=Session.mode!=='live'||accounts.length<2;
+  select.innerHTML=accounts.map(function(a){return '<option value="'+a.id+'"'+(Live.primary&&a.id===Live.primary.id?' selected':'')+'>'+esc(c+' · VY-'+a.id+' · '+money(a.balance/100,c))+'</option>';}).join('');
+  $('#createCurrencyAccount').hidden=Session.mode!=='live'||accounts.length>0;
 }
 function renderCard(){
   var vc=$('#vcard');
@@ -560,9 +581,19 @@ var App={
     document.body.classList.remove('app-open');history.replaceState(null,'',location.pathname);Hero.resume();
   }
 };
-async function syncLive(){
+async function syncLive(silent){
   if(syncInProgress||Session.mode!=='live')return;syncInProgress=true;var syncToken=Session.token;
   try{
+  var snapshot=await api('/workspace');
+  if(Session.token!==syncToken)return;
+  if(snapshot.ok&&snapshot.data&&Array.isArray(snapshot.data.accounts)&&snapshot.data.user){
+    Session.user=snapshot.data.user;persistSessionUser();var p=Session.user.settings||{};
+    if(p.theme)setTheme(p.theme,false);
+    if(typeof p.card_frozen==='boolean')S.card.frozen=p.card_frozen;if(typeof p.online_payments==='boolean')S.card.online=p.online_payments;
+    ['daily_limit','contactless_limit','atm_limit'].forEach(function(k,i){if(typeof p[k]==='number')S.card.limits[['daily','nfc','atm'][i]]=p[k]/100;});
+    applyLiveAccounts(snapshot.data.accounts);Live.entries=snapshot.data.entries||[];Bank.recipients=snapshot.data.recipients||[];lastLiveSync=Date.now();refresh();Engine.paintAccounts();return;
+  }
+  if(snapshot.status!==404){if(snapshot.status===401){Session.clear();App.close();toast('Your session expired. Please sign in again.',true);}else{$('#workspaceStatus').textContent='Connection interrupted · retrying automatically';if(!silent)toast('Your workspace could not be refreshed. Your saved account data is unchanged.',true);}return;}
   var me=await api('/auth/me');
   if(me.offline){toast('Ledger API unreachable — showing your last known state.',true);return;}
   if(!me.ok){
@@ -581,15 +612,13 @@ async function syncLive(){
   var acc=await api('/accounts/me');
   if(Session.token!==syncToken)return;
   if(acc.ok){
-    Live.accounts=acc.data||[];
-    Object.keys(S.wallets).forEach(function(c){var a=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c;});S.wallets[c]=a?Math.round(a.balance)/100:0;});
-    S.spaces=Live.accounts.filter(function(a){return a.kind==='space';}).map(function(a){return {id:String(a.id),name:a.owner_name,goal:a.goal/100,saved:a.balance/100,cur:a.currency,icon:'shield',live:true};});
-    Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.accounts.find(function(a){return a.kind==='current';})||null;
+    applyLiveAccounts(acc.data||[]);
   }
   var statements=await Promise.all(Live.accounts.filter(function(a){return a.kind==='current';}).map(async function(a){var st=await api('/accounts/'+a.id+'/statement');return st.ok?(st.data.entries||[]).map(function(en){return Object.assign({},en,{currency:a.currency});}):null;}));
   if(statements.every(function(entries){return entries!==null;}))Live.entries=statements.flat();else toast('Some activity could not be refreshed. Please try again.',true);
   if(Session.token!==syncToken)return;
   var recipients=await api('/beneficiaries');if(recipients.ok&&Array.isArray(recipients.data))Bank.recipients=recipients.data;
+  if(Session.token!==syncToken)return;lastLiveSync=Date.now();
   refresh();Engine.paintAccounts();
   }finally{syncInProgress=false;}
 }
@@ -726,7 +755,7 @@ $('#sendF').addEventListener('submit',async function(e){
   if(amt>10000){err.textContent='Transfers are limited to 10,000 '+cur+' per payment.';return;}
   var t=Send.target, title='Transfer to '+t.name, liveTx=null;
   btnBusy(btn,true,'Sending…');
-  var liveSource=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===cur;});
+  var liveSource=selectedLiveAccount(cur);
   var liveDestination=Live.accounts.find(function(a){return a.id===t.id;})||(t.type==='veyra'?{id:t.id,currency:t.currency}:null);
   if(Session.mode==='live'&&(!liveSource||!liveDestination||liveDestination.currency!==cur||t.type!=='veyra')){btnBusy(btn,false);err.textContent='Choose a Veyra recipient with an account in '+cur+'. External bank transfers are not connected.';return;}
   if(Session.mode==='live'&&liveSource&&liveDestination&&liveDestination.currency===cur&&t.type==='veyra'){
@@ -859,7 +888,7 @@ $('#cvF').addEventListener('submit',async function(e){
   if(!(c.amt>0)){err.textContent='Enter an amount to convert.';return;}
   if(c.amt>S.wallets[c.from]){err.textContent='You only have '+money(S.wallets[c.from],c.from)+' in '+c.from+'.';return;}
   if(Session.mode==='live'){
-    var source=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c.from;}),destination=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===c.to;});
+    var source=selectedLiveAccount(c.from),destination=selectedLiveAccount(c.to);
     if(!source||!destination){err.textContent='Create both settlement accounts before exchanging.';return;}
     var button=$('#cvBtn');if(button.disabled)return;button.disabled=true;
     try{
@@ -946,7 +975,7 @@ $('#smF').addEventListener('submit',async function(e){
   err.textContent='';
   if(!(amt>0)){err.textContent='Enter an amount.';$('#smAmt').focus();return;}
   if(Session.mode==='live'&&sp.live){
-    var currentAccount=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===sp.cur;}),spaceAccount=Live.accounts.find(function(a){return String(a.id)===sp.id;});
+    var currentAccount=selectedLiveAccount(sp.cur),spaceAccount=Live.accounts.find(function(a){return String(a.id)===sp.id;});
     if(!currentAccount||!spaceAccount){err.textContent='The matching settlement account is unavailable.';return;}
     var source=spaceMove.dir==='add'?currentAccount:spaceAccount,destination=spaceMove.dir==='add'?spaceAccount:currentAccount;
     var moved=await api('/transfers',{method:'POST',body:{source_account_id:source.id,destination_account_id:destination.id,reference:sp.name,amount:Math.round(amt*100),idempotency_key:uuid()}});
@@ -1153,17 +1182,19 @@ var Engine={
 };
 
 /* Loaded into the app closure by the source assembly, not as a global script. */
-var lastInteraction=Date.now(),syncInProgress=false;
+var lastInteraction=Date.now(),syncInProgress=false,lastLiveSync=0;
+function refreshVisibleWorkspace(){if(Session.mode==='live'&&!$('#app').hidden&&!document.hidden&&!Modals.isOpen()&&Date.now()-lastLiveSync>5000)syncLive(true);}
+setInterval(refreshVisibleWorkspace,25000);window.addEventListener('online',refreshVisibleWorkspace);window.addEventListener('focus',refreshVisibleWorkspace);document.addEventListener('visibilitychange',refreshVisibleWorkspace);
 var Bank={recipients:[],tab:'funding',generation:0};
 function hubAccounts(){return Live.accounts.filter(function(a){return a.kind==='current';});}
-function hubAccountOptions(){return hubAccounts().map(function(a){return '<option value="'+a.id+'"'+(a.currency===S.active?' selected':'')+'>'+esc(a.currency+' · '+money(a.balance/100,a.currency))+'</option>';}).join('');}
+function hubAccountOptions(){return hubAccounts().map(function(a){return '<option value="'+a.id+'"'+(Live.primary&&a.id===Live.primary.id?' selected':'')+'>'+esc(a.currency+' · VY-'+a.id+' · '+money(a.balance/100,a.currency))+'</option>';}).join('');}
 async function openBanking(tab){Modals.open('m-banking');await renderBanking(tab||Bank.tab);}
 async function renderBanking(tab){
   Bank.tab=tab;var generation=++Bank.generation,content=$('#hubContent');$('#hubErr').textContent='';
   $$('[data-hub]').forEach(function(b){b.setAttribute('aria-selected',String(b.dataset.hub===tab));b.tabIndex=b.dataset.hub===tab?0:-1;});
   content.setAttribute('aria-labelledby','hub-tab-'+tab);
   if(Session.mode!=='live'){
-    content.innerHTML='<div class="hub-result">This hub uses your saved backend account. Sign in to fund a sandbox balance, manage recipients, schedule payments and inspect the audit trail.</div><button class="btn-ink lg" type="button" data-action="signin">Sign in to your account</button>';return;
+    content.innerHTML='<div class="hub-result">Use a personal Veyra account to fund a sandbox balance, manage recipients, schedule payments and review your activity log.</div><button class="btn-ink lg" type="button" data-action="personal-signin">Sign in to your account</button>';return;
   }
   var options=hubAccountOptions();
   if(!options){content.innerHTML='<p class="hub-note">Your accounts are loading. Refresh the workspace and try again.</p>';return;}
@@ -1232,10 +1263,25 @@ function renderInsights(){
   $('#budgetSummary').textContent=budget?(same?money(outgoing,cur)+' / ':'')+money(budget,cur):'Not set';
   $('#budgetProgress').setAttribute('aria-valuenow',used);$('#budgetBar').style.width=used+'%';
   $('#budgetHelp').textContent=!budget?'Set a monthly budget in Preferences to follow your spending.':!same?'Select your '+cur+' account to track this budget.':outgoing>budget?'You are '+money(outgoing-budget,cur)+' over your monthly budget.':money(budget-outgoing,cur)+' remaining this month. Transfers and exchanges count as account outflows.';
+  renderCashflow();
 }
+var chartDays=7;
+function renderCashflow(){
+ var now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate()-chartDays+1),count=chartDays===7?7:10,buckets=Array.from({length:count},function(_,i){var from=new Date(start);from.setDate(from.getDate()+i*(chartDays===7?1:3));return {from:from,incoming:0,outgoing:0};});
+ var incoming=0,outgoing=0,transactions=0;
+ allActivity().filter(function(a){return a.cur===S.active&&a.t>=start.getTime()&&a.t<=Date.now();}).forEach(function(a){var date=new Date(a.t),day=Math.floor((Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())-Date.UTC(start.getFullYear(),start.getMonth(),start.getDate()))/86400000),index=Math.min(count-1,Math.floor(day/(chartDays===7?1:3)));if(index<0)return;transactions++;if(a.amt>0){buckets[index].incoming+=a.amt;incoming+=a.amt;}else{buckets[index].outgoing-=a.amt;outgoing-=a.amt;}});
+ var max=Math.max(1,...buckets.map(function(b){return Math.max(b.incoming,b.outgoing);}));
+ $('#cashflowChart').innerHTML=buckets.map(function(b){var label=b.from.toLocaleDateString('en-GB',chartDays===7?{weekday:'short'}:{day:'numeric',month:'short'}),detail=label+': '+money(b.incoming,S.active)+' in, '+money(b.outgoing,S.active)+' out';return '<div class="chart-column" title="'+esc(detail)+'"><div class="chart-bars"><i style="height:'+Math.max(2,b.incoming/max*100)+'%"></i><i style="height:'+Math.max(2,b.outgoing/max*100)+'%"></i></div><small>'+esc(label)+'</small></div>';}).join('');
+ var summary='Last '+chartDays+' days: '+money(incoming,S.active)+' in, '+money(outgoing,S.active)+' out. '+transactions+' transactions.';
+ $('#cashflowChart').setAttribute('aria-label',summary);$('#chartSummary').textContent=transactions?transactions+' transactions · '+S.active:'No activity in this period';$('#chartPeriodLabel').textContent='Last '+chartDays+' days';
+}
+$$('[data-chart-days]').forEach(function(button){button.addEventListener('click',function(){chartDays=Number(button.dataset.chartDays);$$('[data-chart-days]').forEach(function(b){b.setAttribute('aria-pressed',String(b===button));});renderCashflow();});});
 function applyPreferences(){
   var p=preferences(),hide=!!p.hide_balances;
   $('#app').classList.toggle('privacy-hidden',hide);$('#app').classList.toggle('compact-activity',!!p.compact_activity);
+  document.documentElement.dataset.reducedMotion=String(!!p.reduced_motion);
+  try{localStorage.setItem('veyra-reduced-motion',String(!!p.reduced_motion));}catch(e){}
+  document.dispatchEvent(new Event('veyra:motion'));
   $('#privacyButton').setAttribute('aria-pressed',hide?'true':'false');$('#privacyButton').setAttribute('aria-label',hide?'Show balances':'Hide balances');$('#privacyButton span').textContent=hide?'Show balances':'Hide balances';
 }
 function renderAvatar(){
@@ -1254,7 +1300,11 @@ async function saveProfileSettings(extra){
   Session.user.settings=r.data;persistSessionUser();applyPreferences();renderAvatar();return true;
 }
 function settingsTab(tab){
+  var tabs=$$('[data-settings-tab]'),previous=tabs.findIndex(function(b){return b.getAttribute('aria-selected')==='true';}),next=tabs.findIndex(function(b){return b.dataset.settingsTab===tab;});
+  $('.settings-tabs').style.setProperty('--active-tab',Math.max(0,next));
   $$('[data-settings-tab]').forEach(function(b){var on=b.dataset.settingsTab===tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;$('#pane-'+b.dataset.settingsTab).hidden=!on;});
+  var pane=$('#pane-'+tab);pane.scrollTop=0;
+  if(pane.animate&&!motionReduced()&&previous!==next){if(pane._veyraAnimation)pane._veyraAnimation.cancel();pane._veyraAnimation=pane.animate([{opacity:0,transform:'translateX('+(next>previous?20:-20)+'px)',filter:'blur(3px)'},{opacity:1,transform:'translateX(0)',filter:'blur(0)'}],{duration:480,easing:'cubic-bezier(.22,1,.36,1)'});}
 }
 function openProfile(tab){
   var p=preferences(),u=Session.user;$('#profileName').value=u.full_name;$('#profileEmail').value=u.email;
@@ -1263,6 +1313,9 @@ function openProfile(tab){
   $('#prefTheme').value=document.documentElement.dataset.theme||'dark';$('#prefCurrency').value=p.primary_currency||S.active;$('#prefHide').checked=!!p.hide_balances;$('#prefCompact').checked=!!p.compact_activity;$('#prefIdle').value=p.idle_timeout||15;$('#prefBudget').value=((p.monthly_budget||0)/100).toFixed(2);$('#budgetLabel').textContent='Monthly budget · '+$('#prefCurrency').value;
   $('#profileMember').textContent=Session.mode==='demo'?'Demo profile · changes are saved on this device.':u.created_at?'Member since '+new Date(u.created_at).toLocaleDateString('en-GB',{month:'long',year:'numeric'}):'Your personal Veyra account.';
   $('#sessionInfo').textContent=(Session.mode==='demo'?'Demo session':'Authenticated session')+' · '+(Session.remember?'Remembered on this device':'This browser session')+' · idle lock '+(p.idle_timeout||15)+' min';
+  $('#prefMotion').checked=!!p.reduced_motion;
+  $('#securityStateTitle').textContent=p.two_factor?'Two-step sign-in is enabled':'Add another layer of protection';
+  $('#securityStateDescription').textContent=p.two_factor?'Your password and a one-time email code protect your sign-in.':'Enable an email code after your password to protect your account.';
   $('#profileAvatar').value='';$('#passwordF').reset();renderAvatar();settingsTab(tab||'personal');Modals.open('m-profile');
 }
 $$('[data-settings-tab]').forEach(function(b){b.addEventListener('click',function(){settingsTab(b.dataset.settingsTab);});});
@@ -1275,7 +1328,7 @@ $('#personalF').addEventListener('submit',async function(e){
 });
 $('#preferencesF').addEventListener('submit',async function(e){
   e.preventDefault();var btn=$('#preferencesSave'),err=$('#preferencesErr'),budget=Number($('#prefBudget').value);err.textContent='';if(!Number.isFinite(budget)||budget<0||budget>1000000){err.textContent='Enter a budget between 0 and 1,000,000.';return;}
-  var p={theme:$('#prefTheme').value,primary_currency:$('#prefCurrency').value,hide_balances:$('#prefHide').checked,compact_activity:$('#prefCompact').checked,idle_timeout:Number($('#prefIdle').value),monthly_budget:Math.round(budget*100)};
+  var p={theme:$('#prefTheme').value,primary_currency:$('#prefCurrency').value,hide_balances:$('#prefHide').checked,compact_activity:$('#prefCompact').checked,reduced_motion:$('#prefMotion').checked,idle_timeout:Number($('#prefIdle').value),monthly_budget:Math.round(budget*100)};
   btnBusy(btn,true,'Saving…');var ok=await saveProfileSettings(p);btnBusy(btn,false);if(ok){setTheme(p.theme,false);S.active=p.primary_currency;refresh();toast('Your preferences have been saved.');}
 });
 $('#prefCurrency').addEventListener('change',function(){$('#budgetLabel').textContent='Monthly budget · '+this.value;});
@@ -1300,6 +1353,36 @@ $('#passwordF').addEventListener('submit',async function(e){
   if(!r.ok){err.textContent=apiErr(r);return;}Session.token=r.data.access_token;try{Session.storage().setItem('veyra_token',Session.token);}catch(e){}this.reset();toast('Password updated. All other sessions have been signed out.');
 });
 async function togglePrivacy(){if(await saveProfileSettings({hide_balances:!preferences().hide_balances}))applyPreferences();}
+$('#accountSelect').addEventListener('change',async function(){
+ var select=this,id=Number(select.value);if(Session.mode!=='live'||!Live.accounts.some(function(a){return a.id===id&&a.currency===S.active&&a.kind==='current';}))return;
+ select.disabled=true;var saved=await saveProfileSettings({selected_account_id:id});select.disabled=false;
+ if(saved){currentQuote=null;applyLiveAccounts(Live.accounts);refresh();toast('Your selected account has been saved.');}else renderBalance();
+});
+var DeleteFlow={generation:0};
+function openDeleteAccount(){
+ DeleteFlow.generation++;$('#deleteRequestF').reset();$('#deleteConfirmF').reset();$('#deleteErr').textContent='';
+ var demo=Session.mode==='demo';$('#deleteRequestF').hidden=demo;$('#deleteConfirmF').hidden=!demo;$('#deleteCodeField').hidden=demo;$('#deleteCode').required=!demo;
+ $('#deleteDescription').textContent=demo?'Remove your demo profile, saved preferences and sample activity from this device. You can start a fresh demo anytime.':'Deleting your account removes your profile, photo, preferences and sign-in. All sessions end and pending payments are cancelled. Closed account and transaction records stay in the ledger.';
+ $('#deleteSentNotice').textContent=demo?'This removes only the demo data on this device.':'';
+ $('#deleteRequestBtn').disabled=false;$('#deleteConfirmBtn').disabled=false;Modals.open('m-delete');
+}
+$('#deleteRequestF').addEventListener('submit',async function(e){
+ e.preventDefault();var generation=DeleteFlow.generation,button=$('#deleteRequestBtn'),password=$('#deletePassword').value;$('#deleteErr').textContent='';
+ if(!password){$('#deleteErr').textContent='Enter your current password.';return;}
+ btnBusy(button,true,'Sending code…');var response=await api('/auth/account/deletion-code',{method:'POST',body:{password:password}});btnBusy(button,false);
+ if(generation!==DeleteFlow.generation)return;
+ if(!response.ok){$('#deleteErr').textContent=response.offline?'Email delivery is unavailable. Try again shortly.':apiErr(response);return;}
+ $('#deleteRequestF').hidden=true;$('#deleteConfirmF').hidden=false;$('#deleteSentNotice').textContent='A confirmation code was sent to '+Session.user.email+'. It expires in 10 minutes.';$('#deleteCode').focus();
+});
+$('#deleteConfirmF').addEventListener('submit',async function(e){
+ e.preventDefault();var error=$('#deleteErr'),button=$('#deleteConfirmBtn'),generation=DeleteFlow.generation;error.textContent='';
+ if($('#deleteConfirmation').value!=='DELETE'){error.textContent='Type DELETE exactly to confirm.';return;}
+ if(Session.mode==='live'&&!/^\d{6}$/.test($('#deleteCode').value)){error.textContent='Enter the six-digit code from your email.';return;}
+ btnBusy(button,true,'Deleting account…');
+ if(Session.mode==='live'){var response=await api('/auth/account',{method:'DELETE',body:{password:$('#deletePassword').value,code:$('#deleteCode').value,confirmation:'DELETE'}});if(generation!==DeleteFlow.generation){btnBusy(button,false);return;}if(!response.ok){btnBusy(button,false);error.textContent=response.offline?'The service is unavailable. Your deletion could not be confirmed.':apiErr(response);return;}}
+ var demo=Session.mode==='demo',key=stateKey();try{localStorage.removeItem(key);if(demo)localStorage.removeItem('veyra-demo-profile');}catch(ignore){}
+ btnBusy(button,false);signOut();window.scrollTo({top:0,behavior:'instant'});toast(demo?'Your demo data has been deleted.':'Your Veyra account has been deleted.');
+});
 ['#activitySearch','#activityDirection','#activityPeriod'].forEach(function(sel){$(sel).addEventListener(sel==='#activitySearch'?'input':'change',function(){activityLimit=8;renderActivity();});});
 function exportActivity(){
   var rows=filteredActivity();if(!rows.length){toast('No transactions match these filters.');return;}
@@ -1345,15 +1428,20 @@ document.addEventListener('click',function(e){
       if(Session.token) App.open(); else {openSignIn();toast('Sign in to access your treasury.');}
       break;
     case 'signin': openSignIn();break;
+    case 'personal-signin':
+      if(Session.mode==='demo'){Modals.stack.slice().forEach(function(item){Modals.close(item.el.id);});Session.clear();App.close();}openSignIn();break;
     case 'register': openRegister();break;
     case 'theme': toggleTheme();break;
     case 'profile': openProfile('personal');break;
     case 'settings': openProfile('preferences');break;
+    case 'delete-account': openDeleteAccount();break;
     case 'security': openProfile('security');break;
     case 'budget-settings': openProfile('preferences');$('#prefBudget').focus();break;
     case 'privacy': togglePrivacy();break;
     case 'export-csv': exportActivity();break;
     case 'refresh-data': if(Session.mode==='live')syncLive();else{renderAll();toast('Your demo workspace is up to date.');}break;
+    case 'create-currency-account':
+      (async function(){el.disabled=true;var r=await api('/accounts',{method:'POST',body:{currency:S.active,kind:'current'}});el.disabled=false;if(r.ok){await syncLive();toast('Your '+S.active+' account has been created.');}else toast(apiErr(r),true);})();break;
     case 'password-visibility': var input=document.getElementById(el.dataset.target);input.type=input.type==='password'?'text':'password';el.textContent=input.type==='password'?'Show':'Hide';el.setAttribute('aria-pressed',input.type==='text'?'true':'false');break;
     case 'to-register': Modals.close('m-signin');setTimeout(openRegister,120);break;
     case 'to-signin': Modals.close('m-register');setTimeout(openSignIn,120);break;
@@ -1385,7 +1473,7 @@ document.addEventListener('click',function(e){
     case 'convert': openConvert();break;
     case 'cv-max': $('#cvAmt').value=S.wallets[$('#cvFrom').value].toFixed(2);calcConvert();break;
     case 'cv-swap': var f=$('#cvFrom').value;$('#cvFrom').value=$('#cvTo').value;$('#cvTo').value=f;calcConvert();break;
-    case 'goto-spaces': $('#d-spaces').scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});break;
+    case 'goto-spaces': $('#d-spaces').scrollIntoView({behavior:motionReduced()?'auto':'smooth',block:'start'});break;
     case 'new-space': openNewSpace();break;
     case 'space-move': openSpaceMove(el.dataset.id,el.dataset.dir);break;
     case 'freeze': toggleFreeze();break;
@@ -1406,19 +1494,19 @@ document.addEventListener('click',function(e){
 $('#curRow').addEventListener('click',function(e){
   var b=e.target.closest('.cur');if(!b) return;
   S.active=b.dataset.cur;
-  Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.primary;
+  Live.primary=selectedLiveAccount(S.active);
   refresh();if(Session.mode==='live') syncLive();
 });
 $('#curRow').addEventListener('keydown',function(e){
   if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft') return;
   var tabs=$$('#curRow .cur'), i=tabs.findIndex(function(t){return t.dataset.cur===S.active;});
   i=(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-  S.active=tabs[i].dataset.cur;Live.primary=Live.accounts.find(function(a){return a.kind==='current'&&a.currency===S.active;})||Live.primary;refresh();if(Session.mode==='live') syncLive();tabs[i].focus();e.preventDefault();
+  S.active=tabs[i].dataset.cur;Live.primary=selectedLiveAccount(S.active);refresh();if(Session.mode==='live') syncLive();tabs[i].focus();e.preventDefault();
 });
-$$('.seg button').forEach(function(b){
+$$('.seg [data-filter]').forEach(function(b){
   b.addEventListener('click',function(){
     activityFilter=b.dataset.filter;activityLimit=8;
-    $$('.seg button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+    $$('.seg [data-filter]').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
     renderActivity();
   });
 });
@@ -1428,7 +1516,7 @@ $$('.dnav a').forEach(function(a){
     e.preventDefault();
     if(a.hasAttribute('data-action'))return;
     var t=document.querySelector(a.getAttribute('href'));
-    if(t) t.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
+    if(t) t.scrollIntoView({behavior:motionReduced()?'auto':'smooth',block:'start'});
     $$('.dnav a').forEach(function(x){if(x===a) x.setAttribute('aria-current','page'); else x.removeAttribute('aria-current');});
   });
 });

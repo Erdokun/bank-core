@@ -6,7 +6,7 @@
 <title>Veyra — Your money, in perspective.</title>
 <meta name="description" content="Bring your currencies, transfers and savings together in one considered workspace. Meet Veyra.">
 <meta name="theme-color" content="#000000">
-<script>(function(){try{document.documentElement.dataset.theme=localStorage.getItem('veyra-theme')||'dark';}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
+<script>(function(){try{document.documentElement.dataset.theme=localStorage.getItem('veyra-theme')||'dark';document.documentElement.dataset.reducedMotion=localStorage.getItem('veyra-reduced-motion')||'false';}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
 <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -569,11 +569,15 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 }
 </style>
 <link rel="stylesheet" href="/static/veyra.css">
+<link rel="stylesheet" href="/static/perspective.css">
+<link rel="stylesheet" href="/static/refinement.css">
+<link rel="stylesheet" href="/static/themes.css">
 </head>
 <body>
 
 <!-- Inline icon sprite (hand-drawn strokes, 24px grid) -->
 <svg class="svg-sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.6 8.6 0 0 1 10.8 3.5a8.7 8.7 0 1 0 9.7 9.7Z"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M6 18 18 6M9 6h9v9"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
@@ -608,26 +612,39 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
      HERO STAGE
      ===================================================================== -->
 <div class="landing" id="stage">
-  <div class="galaxy-background" aria-hidden="true"><div class="nebula"></div><canvas id="galaxyCanvas"></canvas></div>
   <header class="navbar"><div class="navrow">
     <a class="logo" href="/" data-action="home" aria-label="Veyra home"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6L14 26H18L27 6H21.5L16 19.5L10.5 6H5Z" fill="#fff"/><path d="M19 6L14 18L16 23L23.5 6H19Z" fill="#79dce8"/></svg><span>Veyra</span></a>
-    <nav class="links" id="site-nav" aria-label="Primary"><a class="signin" id="navSignIn" href="#" data-action="signin">Sign in</a><a class="open" href="#" data-action="register">Get started <svg class="ic"><use href="#i-arrow"/></svg></a></nav>
+    <nav class="links" id="site-nav" aria-label="Primary"><a href="#perspective">The experience</a><a href="#security">Security</a><a href="#questions">Questions</a><button class="theme-toggle nav-theme" type="button" data-action="theme" aria-label="Switch to light mode"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg></button><a class="signin" id="navSignIn" href="#" data-action="signin">Sign in</a><a class="open" href="#" data-action="register">Get started <svg class="ic"><use href="#i-arrow"/></svg></a></nav>
     <button class="burger" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav"><span></span><span></span><span></span></button>
   </div></header>
   <main>
     <section class="hero" aria-labelledby="heroTitle">
+      <div class="galaxy-background" aria-hidden="true"><div class="nebula"></div></div>
       <div class="hero-copy">
-      <div class="overline">A little space. A clearer perspective.</div>
       <h1 id="heroTitle">Your money.<span>A wider perspective.</span></h1>
-      <p>Your everyday finances, in one quiet place.
-      Four currencies. More room for what matters.</p>
+      <p>Less noise. More possibility. Bring your currencies, everyday moves and bigger ambitions into focus.</p>
       <div class="hero-cta"><a class="marketing-button" href="#" data-action="register">Make it yours <svg class="ic"><use href="#i-arrow"/></svg></a><button class="marketing-button outline" type="button" data-action="demo">Explore the demo</button></div>
       </div>
-      <div class="hero-bottom"><span>EUR</span><span>USD</span><span>GBP</span><span>TRY</span></div>
-      <button class="motion-control" type="button" id="heroMotion" aria-pressed="false" aria-label="Pause scene animation"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="motion-pause" d="M9 5v14M15 5v14"/><path class="motion-play" d="m9 5 10 7-10 7Z"/></svg><span>Pause motion</span></button>
+      <div class="hero-object" aria-hidden="true"><div class="orbital orbital-one"></div><div class="orbital orbital-two"></div><div class="object-glow"></div><div class="metal-card"><div class="metal-top"><span class="metal-brand">Ⅴ veyra</span><span class="metal-tier">BLACK EDITION</span></div><div class="metal-chip"><i></i></div><div class="metal-orbit"></div><div class="metal-bottom"><span>YOUR NEXT CHAPTER<br><b>•••• &nbsp; 4828</b></span><span class="metal-symbol">Ⅴ</span></div></div></div>
+      <a href="#perspective" class="hero-discover">Discover Veyra <svg class="ic"><use href="#i-arrow"/></svg></a>
     </section>
+    <section class="manifesto section-shell" aria-labelledby="manifestoTitle"><h2 id="manifestoTitle">Life moves in every direction.<br><span>Your money should keep up.</span></h2><div class="manifesto-bottom"><p>One considered workspace. Four currencies. A little more room to see the bigger picture.</p><a href="#perspective" class="text-link">Meet your new perspective <svg class="ic"><use href="#i-arrow"/></svg></a></div></section>
+    <section class="scroll-story section-shell" id="perspective" aria-label="Discover the Veyra workspace">
+      <div class="story-visual"><div class="story-visual-inner"><div class="story-stage" data-chapter="0">
+        <div class="story-atmosphere" aria-hidden="true"></div><div class="story-floating-currencies" aria-hidden="true"><span>€</span><span>$</span><span>£</span><span>₺</span></div>
+        <div class="story-wallet"><div class="story-wallet-head"><span>Ⅴ veyra</span><span>Demo preview</span></div><p>Your world, in balance.</p><div class="story-amount" id="storyBalance">€12,480<span>.00</span></div><div class="story-currency-tabs" role="group" aria-label="Preview a currency"><button type="button" data-preview-cur="EUR" aria-pressed="true">EUR</button><button type="button" data-preview-cur="USD" aria-pressed="false">USD</button><button type="button" data-preview-cur="GBP" aria-pressed="false">GBP</button><button type="button" data-preview-cur="TRY" aria-pressed="false">TRY</button></div><div class="story-wallet-line"><span><svg class="ic"><use href="#i-globe"/></svg> Four currencies. One home.</span><svg class="ic"><use href="#i-arrow"/></svg></div></div>
+        <div class="story-payment" aria-hidden="true"><span class="payment-check">↗</span><div><b>A move worth making.</b><small>Internal transfer · Preview</small></div><span>€240.00</span></div>
+        <div class="story-saving" aria-hidden="true"><span class="overline">YOUR NEXT CHAPTER</span><div><svg class="ic"><use href="#i-target"/></svg><b>A place of your own.</b></div><p>€6,500 <span>/ €10,000</span></p><div class="saving-track"><i></i></div><small>65% of the way there.</small></div>
+      </div><p class="preview-disclaimer">A glimpse of the workspace. Sample balances only.</p></div></div>
+      <div class="story-chapters"><article class="story-chapter" data-story="0" id="currencies"><h2>One home.<br><span>Every currency.</span></h2><p>Keep EUR, USD, GBP and TRY side by side. Switch your perspective in a click. Review your exchange quote before making your next move.</p><div class="chapter-detail"><svg class="ic"><use href="#i-globe"/></svg><span>Four balances. One clear overview.</span></div><button class="marketing-button outline" type="button" data-action="demo">Explore your workspace <svg class="ic"><use href="#i-arrow"/></svg></button></article>
+      <article class="story-chapter" data-story="1" id="move"><h2>Make moves.<br><span>Stay in control.</span></h2><p>Send between Veyra accounts, keep your recipients close and plan ahead with scheduled payments. Every movement has a place in your history.</p><div class="chapter-detail"><svg class="ic"><use href="#i-transfer"/></svg><span>A considered flow, from send to settled.</span></div><button class="marketing-button outline" type="button" data-action="demo">Discover the demo <svg class="ic"><use href="#i-arrow"/></svg></button></article>
+      <article class="story-chapter" data-story="2" id="grow"><h2>Small steps.<br><span>Bigger horizons.</span></h2><p>A next adventure. A place of your own. A little breathing room. Give your goals a Space, set a target and watch your progress take shape.</p><div class="chapter-detail"><svg class="ic"><use href="#i-target"/></svg><span>Your goals. Your pace. Your perspective.</span></div><button class="marketing-button outline" type="button" data-action="demo">Find your Space <svg class="ic"><use href="#i-arrow"/></svg></button></article></div>
+    </section>
+    <section class="security-story section-shell" id="security" aria-labelledby="securityTitle"><div class="security-composition"><div class="security-sculpture" aria-hidden="true"><div class="shield-orbit"></div><svg viewBox="0 0 160 180" fill="none"><path d="M80 10 145 35v53c0 43-37 71-65 84-28-13-65-41-65-84V35L80 10Z" stroke="url(#shieldSilver)" stroke-width="2"/><path d="m52 87 20 20 40-43" stroke="white" stroke-width="3"/><defs><linearGradient id="shieldSilver" x1="15" y1="10" x2="145" y2="172"><stop stop-color="#fff"/><stop offset=".5" stop-color="#555"/><stop offset="1" stop-color="#ddd"/></linearGradient></defs></svg></div><div><h2 id="securityTitle">Your world.<br><span>Under your control.</span></h2><p>Good design feels effortless. Good security gives you the controls to make it yours.</p><ul class="security-features"><li><svg class="ic"><use href="#i-shield"/></svg><div><b>A second step. A stronger sign-in.</b><span>Enable one-time email codes for your account.</span></div></li><li><svg class="ic"><use href="#i-snow"/></svg><div><b>Pause your card. Keep your calm.</b><span>Freeze your sandbox card and manage spending limits.</span></div></li><li><svg class="ic"><use href="#i-eye"/></svg><div><b>Privacy, on your terms.</b><span>Hide balances, set an idle lock and close all sessions.</span></div></li></ul><button class="marketing-button outline" type="button" data-action="register">Make it personal <svg class="ic"><use href="#i-arrow"/></svg></button></div></div></section>
+    <section class="faq section-shell" id="questions" aria-labelledby="faqTitle"><div><h2 id="faqTitle">Good questions.<br><span>Clear answers.</span></h2><p>Everything you need before your next chapter.</p></div><div class="faq-list"><details><summary>What is Veyra?</summary><p>Veyra is an independent fintech engineering project: a working banking sandbox with authenticated accounts, an internal ledger, savings spaces and currency exchange. It is not a licensed bank and does not hold real deposits.</p></details><details><summary>Can I explore before creating an account?</summary><p>Absolutely. The demo workspace has sample balances and transactions, saved on your device. Explore the dashboard, savings spaces and settings. <button class="text-link" type="button" data-action="demo">Open the demo ↗</button></p></details><details><summary>Which currencies can I use?</summary><p>Verified registration creates EUR, USD, GBP and TRY accounts with zero balances. Currency exchange uses reviewed reference-rate quotes. Sandbox funding is available in the Payments hub when enabled.</p></details><details><summary>How do verification codes work?</summary><p>Veyra sends a six-digit code to your email for registration, password reset and optional two-step sign-in. Codes expire after ten minutes and work once. Check your spam folder if a message is missing.</p></details><details><summary>Is the Veyra Black card a real payment card?</summary><p>The card is a sandbox experience for exploring controls, limits and simulated transactions. It is not issued by a payment network and cannot be used at real merchants.</p></details></div></section>
+    <section class="closing-story section-shell" aria-labelledby="closingTitle"><h2 id="closingTitle">More life.<br><span>Less noise.</span></h2><p>Your next chapter starts with a clearer perspective.</p><div class="hero-cta"><button class="marketing-button" type="button" data-action="register">Make it yours <svg class="ic"><use href="#i-arrow"/></svg></button><button class="marketing-button outline" type="button" data-action="demo">Take a look around</button></div><span class="closing-watermark" aria-hidden="true">veyra</span></section>
   </main>
-  <footer><b>Veyra</b><span>Banking sandbox · Built for a wider perspective.</span></footer>
+  <footer><a href="/" data-action="home" class="footer-brand">Ⅴ veyra</a><div><a href="#perspective">The experience</a><a href="#security">Security</a><a href="#questions">Questions</a></div><span>© 2026 Veyra · An independent banking sandbox.<br>Sample money. Real perspective.</span></footer>
 </div>
 
 <!-- =====================================================================
@@ -649,6 +666,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
       </label>
       <label class="field" id="siCodeField" hidden><span>Email verification code</span>
         <input class="inp" type="text" id="siCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code">
+        <button class="linkbtn" type="button" id="siResend" disabled>Resend code in 60s</button>
       </label>
       <div class="auth-options"><label><input type="checkbox" id="siRemember"> Keep me signed in on this device</label></div>
       <p class="form-err" id="siErr" role="alert"></p>
@@ -698,6 +716,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
       <div class="steps" aria-hidden="true"><i class="on"></i><i class="on"></i></div>
       <h2 class="auth-h">Check your email</h2>
       <p class="auth-p">Enter the 6-digit code we sent to <b id="otpEmail">you@company.com</b>.</p>
+      <div class="delivery-hint"><svg class="ic"><use href="#i-shield"/></svg><span>Delivered to your inbox. Check spam too.<br>Your code stays private and works only once.</span></div>
       <div class="otp" id="otpBoxes" role="group" aria-label="Verification code">
         <input inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Digit 1">
         <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
@@ -842,10 +861,12 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
         <section class="panel" aria-labelledby="balLabel">
           <div class="bal-top">
             <span class="label-d" id="balLabel">EUR balance</span>
+            <select class="account-select" id="accountSelect" aria-label="Selected currency account" hidden></select>
             <span class="tag" id="balTag" hidden><i></i>Live ledger</span>
           </div>
           <div class="bal-amt" id="balAmt">€450<span>.00</span></div>
           <p class="bal-sub" id="balSub">Available now · held in Veyra Sovereign Ledger</p>
+          <button class="btn-line create-account" type="button" data-action="create-currency-account" id="createCurrencyAccount" hidden>Create this currency account</button>
           <div class="actions">
             <button class="act" type="button" data-action="send"><span class="act-ic"><svg class="ic"><use href="#i-send"/></svg></span><b>Send Money</b><small>Veyra transfers</small></button>
             <button class="act" type="button" data-action="topup"><span class="act-ic"><svg class="ic"><use href="#i-plus"/></svg></span><b>Add Money</b><small>Sandbox funding</small></button>
@@ -857,6 +878,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
         <section class="panel" id="d-insights" aria-labelledby="insightsH">
           <div class="sec-head"><div><h3 class="sec-h" id="insightsH">Your month, at a glance</h3><p class="sec-p" id="insightsPeriod">Cash flow in your selected currency</p></div><button class="btn-line" type="button" data-action="budget-settings">Set budget</button></div>
           <div class="insight-stats"><div><small>Money in</small><b id="monthIn">€0.00</b></div><div><small>Money out</small><b id="monthOut">€0.00</b></div><div><small>Net flow</small><b id="monthNet">€0.00</b></div></div>
+          <div class="cashflow-top"><span>Cash flow <small id="chartPeriodLabel">Last 7 days</small></span><div class="seg" role="group" aria-label="Cash flow period"><button type="button" data-chart-days="7" aria-pressed="true">7 days</button><button type="button" data-chart-days="30" aria-pressed="false">30 days</button></div></div><div class="cashflow-chart" id="cashflowChart" role="img" aria-label="Cash flow chart"></div><div class="chart-legend"><span><i></i> Money in</span><span><i></i> Money out</span><small id="chartSummary"></small></div>
           <div class="budget-line"><span>Monthly spending budget</span><span id="budgetSummary">Not set</span></div><div class="bar" role="progressbar" id="budgetProgress" aria-label="Monthly budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="budgetBar"></i></div><p class="budget-help" id="budgetHelp">Set a monthly budget in Settings to follow your spending.</p>
         </section>
 
@@ -1086,12 +1108,13 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 <div class="modal light" id="m-profile" role="dialog" aria-modal="true" aria-labelledby="profileH" hidden>
   <div class="sheet">
     <button class="sheet-x" type="button" data-close aria-label="Close settings"><svg class="ic"><use href="#i-close"/></svg></button>
-    <h2 class="m-h" id="profileH">Make yourself at home.</h2><p class="m-p">Your profile, preferences and peace of mind.</p>
-    <div class="settings-tabs" role="tablist" aria-label="Settings sections"><button type="button" role="tab" data-settings-tab="personal" id="tab-personal" aria-controls="pane-personal" aria-selected="true">Profile</button><button type="button" role="tab" data-settings-tab="preferences" id="tab-preferences" aria-controls="pane-preferences" aria-selected="false" tabindex="-1">Preferences</button><button type="button" role="tab" data-settings-tab="security" id="tab-security" aria-controls="pane-security" aria-selected="false" tabindex="-1">Security</button></div>
+    <div class="settings-heading"><h2 class="m-h" id="profileH">Make yourself at home.</h2><p class="m-p">Your profile, preferences and peace of mind.</p></div>
+    <div class="settings-tabs" role="tablist" aria-label="Settings sections"><span class="settings-indicator" aria-hidden="true"></span><button type="button" role="tab" data-settings-tab="personal" id="tab-personal" aria-controls="pane-personal" aria-selected="true">Profile</button><button type="button" role="tab" data-settings-tab="preferences" id="tab-preferences" aria-controls="pane-preferences" aria-selected="false" tabindex="-1">Preferences</button><button type="button" role="tab" data-settings-tab="security" id="tab-security" aria-controls="pane-security" aria-selected="false" tabindex="-1">Security</button></div>
     <section class="settings-pane" id="pane-personal" role="tabpanel" aria-labelledby="tab-personal">
       <div class="profile-summary"><span class="avatar" id="profilePreview">V</span><div><b id="profileDisplayName">Your name</b><p id="profileDisplayEmail"></p></div></div>
       <form class="mform" id="personalF"><label class="lf"><span>Full name</span><input class="li" id="profileName" autocomplete="name" minlength="2" maxlength="100" required></label><label class="lf"><span>Email address · verified at registration</span><input class="li" id="profileEmail" type="email" readonly></label><label class="lf"><span>Profile photo · PNG, JPEG or WebP, up to 200 KB</span><input class="li" id="profileAvatar" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="chips" id="avatarPresets"><button type="button" data-avatar="slate">Use initials</button><button type="button" data-avatar="sage">V</button></div><p class="form-err" id="personalErr" role="alert"></p><button class="btn-ink lg" type="submit" id="personalSave">Save profile</button></form>
       <p class="settings-note" id="profileMember"></p>
+      <div class="account-danger"><div><h3>Your account</h3><p>Ready to leave? Delete your profile and sign-in.</p></div><button type="button" class="btn-line" data-action="delete-account">Delete account</button></div>
     </section>
     <section class="settings-pane" id="pane-preferences" role="tabpanel" aria-labelledby="tab-preferences" hidden>
       <form id="preferencesF">
@@ -1099,21 +1122,33 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
         <label class="settings-row"><span>Preferred currency<small>Open your workspace with this currency selected.</small></span><select id="prefCurrency"><option>EUR</option><option>USD</option><option>GBP</option><option>TRY</option></select></label>
         <label class="settings-row"><span>Hide balances<small>Keep balances and account identifiers out of view.</small></span><input type="checkbox" id="prefHide"></label>
         <label class="settings-row"><span>Compact activity<small>A denser view for your transaction history.</small></span><input type="checkbox" id="prefCompact"></label>
+        <label class="settings-row"><span>Reduce motion<small>Keep visual effects still. Your device preference is always respected.</small></span><input type="checkbox" id="prefMotion"></label>
         <label class="settings-row"><span>Lock after inactivity<small>Sign out automatically when you leave your workspace idle.</small></span><select id="prefIdle"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option></select></label>
         <label class="lf" style="margin-top:22px"><span id="budgetLabel">Monthly budget · EUR</span><input class="li" id="prefBudget" type="number" min="0" max="1000000" step="0.01" placeholder="0.00"><small class="settings-note">Set to zero to turn off the budget. The budget follows your preferred currency.</small></label>
         <p class="form-err" id="preferencesErr" role="alert"></p><button class="btn-ink lg" type="submit" id="preferencesSave" style="margin-top:20px">Save preferences</button>
       </form>
     </section>
     <section class="settings-pane" id="pane-security" role="tabpanel" aria-labelledby="tab-security" hidden>
+      <div class="security-status"><svg class="ic"><use href="#i-shield"/></svg><div><b id="securityStateTitle">Your sign-in protection</b><small id="securityStateDescription">Manage the way you access your account.</small></div></div>
       <form class="mform" id="profileF"><label class="settings-row"><span>Two-step sign-in<small>Receive a one-time email code after entering your password.</small></span><input type="checkbox" id="profile2fa"></label><label class="lf"><span>Current password · required to change two-step sign-in</span><input class="li" id="profilePass" type="password" autocomplete="current-password" maxlength="128"></label><label class="lf" id="profileCodeField" hidden><span>Six-digit code sent to your email</span><input class="li" id="profileCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" pattern="[0-9]{6}"></label><p class="form-err" id="profileErr" role="alert"></p><button class="btn-ink lg" type="submit" id="profileSave">Save security settings</button></form>
       <div class="divider">Change password</div>
       <form class="mform" id="passwordF"><label class="lf"><span>Current password</span><input class="li" id="pwCurrent" type="password" autocomplete="current-password" maxlength="128" required></label><div class="grid2"><label class="lf"><span>New password</span><input class="li" id="pwNew" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label class="lf"><span>Confirm new password</span><input class="li" id="pwConfirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label></div><p class="form-err" id="passwordErr" role="alert"></p><button class="btn-line" type="submit" id="passwordSave">Change password</button></form>
       <div class="session-card"><b>Current workspace</b><small id="sessionInfo"></small><small>Closing all sessions also signs out this device.</small></div><button class="btn-line" type="button" data-action="revoke-sessions">Sign out all devices</button>
     </section>
-    <div style="margin-top:26px;border-top:1px solid var(--edge);padding-top:18px;display:flex;gap:10px;justify-content:space-between"><button class="btn-line" type="button" data-action="signout">Sign out</button><button class="btn-line" type="button" data-close>Done</button></div>
+    <div class="settings-footer"><button class="btn-line" type="button" data-action="signout">Sign out</button><button class="btn-line" type="button" data-close>Done</button></div>
   </div>
 </div>
 <div class="modal dark" id="m-reset" role="dialog" aria-modal="true" aria-labelledby="resetTitle" hidden><div class="sheet"><button class="sheet-x" type="button" data-close aria-label="Close password reset"><svg class="ic"><use href="#i-close"/></svg></button><h2 class="auth-h" id="resetTitle">A fresh start.</h2><p class="auth-p">Enter your account email to request a password reset code.</p><form class="form" id="resetRequestF"><label class="field"><span>Email address</span><input class="inp" id="resetEmail" type="email" autocomplete="email" maxlength="255" required></label><button class="btn-white" type="submit" id="resetRequestBtn">Send reset code</button></form><form class="form" id="resetF" hidden><p class="fine" id="resetNotice"></p><label class="field"><span>Email code</span><input class="inp" id="resetCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><label class="field"><span>New password</span><input class="inp" id="resetPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><label class="field"><span>Confirm new password</span><input class="inp" id="resetConfirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></label><button class="btn-white" type="submit" id="resetBtn">Reset password</button><button class="demo-button" type="button" data-action="reset-again">Use a different email / request again</button></form><p class="form-err" id="resetErr" role="alert" style="margin-top:18px"></p></div></div>
+
+<div class="modal light" id="m-delete" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" hidden>
+  <div class="sheet"><button class="sheet-x" type="button" data-close aria-label="Close account deletion"><svg class="ic"><use href="#i-close"/></svg></button>
+    <div class="deletion-icon"><svg class="ic"><use href="#i-shield"/></svg></div><h2 class="m-h" id="deleteTitle">A final goodbye.</h2>
+    <p class="m-p" id="deleteDescription">Deleting your account removes your profile, photo, preferences and sign-in. All sessions end, and pending payments are cancelled. Closed account and transaction records stay in the ledger.</p>
+    <form class="mform" id="deleteRequestF"><label class="lf"><span>Confirm your current password</span><input class="li" id="deletePassword" type="password" autocomplete="current-password" maxlength="128" required></label><p class="settings-note">All currency and savings balances must be zero. We will send a verification code to your account email.</p><button class="btn-ink lg" type="submit" id="deleteRequestBtn">Send confirmation code</button></form>
+    <form class="mform" id="deleteConfirmF" hidden><p class="settings-note" id="deleteSentNotice" role="status"></p><label class="lf" id="deleteCodeField"><span>Email confirmation code</span><input class="li" id="deleteCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"></label><label class="lf"><span>Type DELETE to confirm</span><input class="li" id="deleteConfirmation" autocomplete="off" spellcheck="false" placeholder="DELETE" required></label><p class="settings-note">This action cannot be undone.</p><button class="btn-ink lg" type="submit" id="deleteConfirmBtn">Permanently delete account</button></form>
+    <p class="form-err" id="deleteErr" role="alert"></p><button class="btn-line deletion-cancel" type="button" data-close>Keep my account</button>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><i></i><span id="toastMsg"></span></div>
 
@@ -1135,6 +1170,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 
 <script src="/static/hero-scene.js" defer></script>
 <script src="/static/app.js" defer></script>
+<script src="/static/perspective.js" defer></script>
 
 </body>
 </html>

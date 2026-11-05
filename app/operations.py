@@ -82,6 +82,7 @@ def register_operations(app, current_user):
         clearing = await ledger.clearing_account(db, account.currency)
         # Serialize all of this user's card channels, including preference changes.
         locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        guards.require_active(locked)
         _, _, existing = await ledger.lock_operation(db, user.id, "card:" + payload.idempotency_key, dict(source=account.id, destination=clearing.id, amount=payload.amount, kind="card_" + payload.channel, reference=payload.merchant))
         if existing:
             return payment_response(existing, True)
@@ -107,11 +108,13 @@ def register_operations(app, current_user):
 
     @app.get("/beneficiaries", tags=["Beneficiaries"])
     async def beneficiaries(user=Depends(current_user), db=Depends(get_db)):
-        rows = (await db.execute(select(models.Beneficiary, models.Account).join(models.Account).where(models.Beneficiary.user_id == user.id).order_by(models.Beneficiary.id.desc()))).all()
+        rows = (await db.execute(select(models.Beneficiary, models.Account).join(models.Account).where(models.Beneficiary.user_id == user.id, models.Account.kind == "current").order_by(models.Beneficiary.id.desc()))).all()
         return [{"id": b.id, "name": b.name, "account_id": a.id, "account_number": a.account_number, "currency": a.currency} for b, a in rows]
 
     @app.post("/beneficiaries", status_code=201, tags=["Beneficiaries"])
     async def add_beneficiary(payload: BeneficiaryCreate, user=Depends(current_user), db=Depends(get_db)):
+        locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        guards.require_active(locked)
         account = await db.get(models.Account, payload.account_id)
         if not account or account.kind != "current":
             raise HTTPException(404, "Recipient account not found.")
@@ -138,6 +141,8 @@ def register_operations(app, current_user):
     @app.post("/payments/scheduled", status_code=201, tags=["Scheduled payments"])
     async def schedule(payload: ScheduleCreate, user=Depends(current_user), db=Depends(get_db)):
         guards.require_customer(user)
+        locked = (await db.execute(select(models.User).where(models.User.id == user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+        guards.require_active(locked)
         key, fingerprint, _ = await ledger.lock_operation(db, user.id, "schedule:" + payload.idempotency_key, payload.model_dump(mode="json", exclude={"idempotency_key"}))
         existing = (await db.execute(select(models.ScheduledPayment).where(models.ScheduledPayment.request_key == key))).scalar_one_or_none()
         if existing:

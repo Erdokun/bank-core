@@ -35,6 +35,8 @@ async def post(db, user_id, key, source_id, destination_id, amount, *, kind="tra
         raise HTTPException(404, "One or both bank accounts do not exist.")
     source = next(a for a in accounts if a.id == source_id)
     destination = next(a for a in accounts if a.id == destination_id)
+    if source.kind == "closed" or destination.kind == "closed":
+        raise HTTPException(409, "This payment involves a closed account.")
     if clearing_source:
         if source.kind != "clearing" or destination.user_id != user_id:
             raise HTTPException(403, "Invalid funding accounts.")

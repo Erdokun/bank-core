@@ -1,0 +1,70 @@
+/* Complete light counterpart. Photos retain their natural colors. */
+html[data-theme='light']{background:#fff;color-scheme:light;--paper:#f5f5f5;--bg:#fff;--text:#090909;--edge:#00000012;--faint:#00000007}
+html[data-theme='light'] :is(.app,.modal.light .sheet,.app-open .toast){--paper:#f5f5f5;--bg:#fff;--surface:#f5f5f5;--surface-2:#eee;--chip:#e9e9e9;--text:#090909;--ink:#090909;--hi:#090909;--md:#555;--lo:#666;--edge:#00000012;--faint:#00000007;--line:#00000012;--line-2:#00000022;--cyan:#090909;--teal:#090909;--pos:#090909;--neg:#555}
+html[data-theme='light'] body{background:#fff;color:#090909}
+html[data-theme='light'] .landing{background:#fff;color:#090909}
+html[data-theme='light'] .landing .navbar{background:#ffffffd9}
+html[data-theme='light'] .landing .logo path{fill:#111}
+html[data-theme='light'] .landing .links a{color:#333}
+html[data-theme='light'] .landing :is(h1,h2,h3,b,summary){color:#090909}
+html[data-theme='light'] .landing :is(h1 span,h2 span){color:#696969}
+html[data-theme='light'] .landing :is(p,.chapter-detail,.preview-disclaimer,.text-link){color:#555}
+html[data-theme='light'] .landing .hero-discover{color:#555!important}
+html[data-theme='light'] .landing .links a.open,html[data-theme='light'] .landing .marketing-button{background:#111;color:#fff!important}
+html[data-theme='light'] .landing .marketing-button.outline{background:#00000009;color:#111!important}
+html[data-theme='light'] .landing .marketing-button:hover{background:#333;color:#fff!important;box-shadow:0 12px 40px #0000000a}
+html[data-theme='light'] .landing .marketing-button.outline:hover{background:#00000012;color:#111!important;box-shadow:none}
+html[data-theme='light'] .galaxy-background{background:#fff}
+html[data-theme='light'] .galaxy-background::after{background:linear-gradient(90deg,#fff,#ffffff55 45%,transparent),linear-gradient(0deg,#fff,transparent 30%)}
+html[data-theme='light'] .nebula{background:radial-gradient(ellipse at 77% 53%,#00000007,transparent 50%)}
+html[data-theme='light'] .hero-object,html[data-theme='light'] .story-visual-inner,html[data-theme='light'] .security-sculpture{filter:invert(1)}
+/* Inverted artwork keeps its original neutral source colors. */
+html[data-theme='light'] .landing .story-visual-inner :is(p,b){color:#eee}
+html[data-theme='light'] .landing .hero-object b{color:#ddd}
+html[data-theme='light'] .landing .story-visual-inner .preview-disclaimer{color:#999}
+html[data-theme='light'] .story-visual{background:#fff}
+html[data-theme='light'] .security-features span{color:#555}
+html[data-theme='light'] .faq details{background:#f5f5f5}
+html[data-theme='light'] .faq details:hover,html[data-theme='light'] .faq details[open]{background:#ededed}
+html[data-theme='light'] .faq summary::after{color:#444}
+html[data-theme='light'] .faq details .text-link{color:#111}
+html[data-theme='light'] .closing-watermark{color:#00000004}
+html[data-theme='light'] .landing footer{background:transparent}
+html[data-theme='light'] .landing footer :is(a,span){color:#555}
+html[data-theme='light'] .landing footer .footer-brand{color:#111}
+html[data-theme='light'] .app .vcard{filter:invert(1)}
+html[data-theme='light'] .modal{background:#ffffff99;backdrop-filter:blur(24px)}
+html[data-theme='light'] .modal.dark .sheet{background:#f5f5f5;color:#111;box-shadow:0 3rem 10rem #00000018}
+html[data-theme='light'] .modal.dark :is(.auth-h,.sheet-x,.form-err){color:#111}
+html[data-theme='light'] .modal.dark :is(.auth-p,.field>span,.fine,.strength-label,.auth-options,.otp-meta,.auth-foot,.field-row a){color:#555}
+html[data-theme='light'] .modal.dark :is(.inp,.otp input){background:#fff;color:#111;caret-color:#111}
+html[data-theme='light'] .modal.dark :is(.inp,.otp input)::placeholder{color:#777}
+html[data-theme='light'] .modal.dark .btn-white{background:#111;color:#fff}
+html[data-theme='light'] .modal.dark .btn-white:hover{background:#333}
+html[data-theme='light'] .modal .demo-button{background:#00000007;color:#222}
+html[data-theme='light'] .modal .auth-foot a{color:#111}
+html[data-theme='light'] .modal .auth-mark path{fill:#111}
+html[data-theme='light'] .modal .password-visibility{color:#333}
+html[data-theme='light'] .modal .password-strength{background:#00000012}
+html[data-theme='light'] .modal .password-strength i{background:#333!important}
+html[data-theme='light'] .modal .delivery-hint{background:#00000005;color:#555}
+html[data-theme='light'] .modal .delivery-hint .ic{color:#333}
+html[data-theme='light'] .modal :is(.divider,.linkbtn){color:#555!important}
+html[data-theme='light'] .modal.dark #siResend{color:#333}
+html[data-theme='light'] .modal.dark #siResend:disabled{color:#777}
+html[data-theme='light'] .toast,html[data-theme='light'] .app-open .toast{background:#f1f1f1;color:#111;box-shadow:0 1rem 4rem #00000016}
+html[data-theme='light'] .toast i{background:#333}
+.landing .nav-theme{display:grid;place-items:center;flex:none;width:2.9rem;height:2.9rem;border:0;border-radius:50%;background:#ffffff09;color:#eee;cursor:pointer;transition:background .3s,transform .4s var(--ease)}
+.landing .nav-theme:hover{background:#ffffff15;transform:rotate(15deg)}
+html[data-theme='light'] .landing .nav-theme{background:#00000008;color:#111}
+.account-select{max-width:22rem;padding:.65rem 1rem;font:inherit;font-size:.95rem;background:var(--faint);border:0;border-radius:99px;color:var(--text);cursor:pointer}
+.create-account{margin-top:1rem}
+.workspace-sync{font-size:.85rem;color:var(--md);margin-left:.7rem}
+.modal.dark :is(.auth-foot,.field>span,.strength-label,.fine,.auth-options,.field-row a){font-size:.95rem}
+.app .ctl[aria-pressed='true']{background:color-mix(in srgb,var(--text) 7%,var(--paper))!important}
+.app .ctl[aria-pressed='true'] :is(.ctl-ic,.ctl-txt b){color:var(--text)!important}
+.app .ctl[aria-pressed='true'] .ctl-txt small{color:var(--md)!important}
+.app .acct-row+.acct-row{border:0}.app .tag i{background:var(--text)}
+.modal.light .resolve.bad{background:var(--faint);color:var(--text);border:0}
+@media(max-width:700px){html[data-theme='light'] .story-visual{background:#fff;box-shadow:0 1.8rem 1.8rem #fff}}
+@media(max-width:600px){.landing .navrow{padding:0 1rem}.landing .links{gap:.65rem}.landing .nav-theme{width:2.4rem;height:2.4rem}.landing .links a.open{padding:.7rem .9rem}.landing .logo{font-size:1.5rem}.account-select{max-width:12rem;font-size:.85rem;padding:.6rem .7rem}.bal-top{flex-wrap:wrap}.workspace-sync{display:none}}

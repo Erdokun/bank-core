@@ -41,7 +41,7 @@ async def test_profile_updates_account_holder_but_preserves_savings_names():
 async def test_preferences_validate_and_persist_without_losing_other_settings():
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         _, _, headers = await identity(client)
-        prefs = {"theme": "light", "primary_currency": "USD", "hide_balances": True, "compact_activity": True, "idle_timeout": 30, "monthly_budget": 75000, "daily_limit": 100000, "atm_limit": 20000}
+        prefs = {"theme": "light", "primary_currency": "USD", "hide_balances": True, "compact_activity": True, "reduced_motion": True, "idle_timeout": 30, "monthly_budget": 75000, "daily_limit": 100000, "atm_limit": 20000}
         response = await client.patch("/auth/settings", headers=headers, json=prefs)
         assert response.status_code == 200
         assert all(response.json()[key] == value for key, value in prefs.items())
@@ -50,6 +50,7 @@ async def test_preferences_validate_and_persist_without_losing_other_settings():
         assert saved["theme"] == "dark"
         assert saved["monthly_budget"] == 75000
         assert saved["primary_currency"] == "USD"
+        assert saved["reduced_motion"] is True
         for invalid in [{"theme": "rainbow"}, {"primary_currency": "JPY"}, {"monthly_budget": -1}, {"idle_timeout": 0}]:
             assert (await client.patch("/auth/settings", headers=headers, json=invalid)).status_code == 422
 

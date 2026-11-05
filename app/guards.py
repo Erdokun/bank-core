@@ -30,6 +30,12 @@ def evaluate_anti_fraud_rules(amount_cents: int) -> None:
         )
 
 def require_customer(user):
+    require_active(user)
     from app.models import UserRole
     if user.role != UserRole.CUSTOMER:
         raise HTTPException(403, "Auditor accounts have read-only access to banking operations.")
+
+
+def require_active(user):
+    if getattr(user, "deleted_at", None) is not None:
+        raise HTTPException(401, "This Veyra account has been deleted.")

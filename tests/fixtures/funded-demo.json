@@ -1,0 +1,114 @@
+{
+  "v": 2,
+  "wallets": {
+    "EUR": 450,
+    "USD": 1250,
+    "TRY": 42500,
+    "GBP": 320
+  },
+  "active": "EUR",
+  "liveOffset": 0,
+  "card": {
+    "frozen": false,
+    "online": true,
+    "limits": {
+      "daily": 2500,
+      "nfc": 50,
+      "atm": 1000
+    }
+  },
+  "spaces": [
+    {
+      "id": "s1",
+      "name": "Yaz Tatili",
+      "goal": 2000,
+      "saved": 640,
+      "cur": "EUR",
+      "icon": "sun"
+    },
+    {
+      "id": "s2",
+      "name": "Acil Durum Fonu",
+      "goal": 5000,
+      "saved": 1850,
+      "cur": "EUR",
+      "icon": "shield"
+    }
+  ],
+  "activity": [
+    {
+      "id": "a1",
+      "t": 1794730320000,
+      "title": "Card Top-Up",
+      "sub": "Mastercard •• 9010",
+      "cat": "topup",
+      "amt": 100,
+      "cur": "EUR"
+    },
+    {
+      "id": "a2",
+      "t": 1794728460000,
+      "title": "Blue Bottle Coffee",
+      "sub": "Card payment · Berlin",
+      "cat": "coffee",
+      "amt": -5,
+      "cur": "EUR"
+    },
+    {
+      "id": "a3",
+      "t": 1794676800000,
+      "title": "Transfer to #2",
+      "sub": "Selin Kaya · FAST",
+      "cat": "transfer",
+      "amt": -100,
+      "cur": "EUR"
+    },
+    {
+      "id": "a4",
+      "t": 1794654300000,
+      "title": "Migros",
+      "sub": "Groceries · İstanbul",
+      "cat": "grocery",
+      "amt": -842.5,
+      "cur": "TRY"
+    },
+    {
+      "id": "a5",
+      "t": 1794583800000,
+      "title": "Converted USD to EUR",
+      "sub": "$250.00 at 0.9223",
+      "cat": "fx",
+      "amt": 230.58,
+      "cur": "EUR"
+    },
+    {
+      "id": "a6",
+      "t": 1794470400000,
+      "title": "Salary",
+      "sub": "Veyra Holdings A.Ş.",
+      "cat": "salary",
+      "amt": 38000,
+      "cur": "TRY"
+    },
+    {
+      "id": "a7",
+      "t": 1794424500000,
+      "title": "Spotify Premium",
+      "sub": "Subscription",
+      "cat": "sub",
+      "amt": -10.99,
+      "cur": "GBP"
+    },
+    {
+      "id": "a8",
+      "t": 1794314400000,
+      "title": "Whole Foods Market",
+      "sub": "Groceries · New York",
+      "cat": "grocery",
+      "amt": -64.2,
+      "cur": "USD"
+    }
+  ],
+  "liveLabels": {},
+  "balanceRevision": 1
+}

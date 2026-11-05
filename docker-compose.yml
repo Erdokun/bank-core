@@ -21,6 +21,14 @@ services:
     image: redis:7-alpine
     container_name: bank_redis
     restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
     ports:
       - "127.0.0.1:6379:6379"
 
@@ -32,6 +40,7 @@ services:
 
   api:
     build: .
+    image: veyra-bank-core:local
     container_name: bank_api
     restart: always
     ports:
@@ -41,6 +50,7 @@ services:
       REDIS_URL: "redis://redis:6379/0"
       APP_ENV: "${APP_ENV:-development}"
       BANK_SANDBOX: "${BANK_SANDBOX:-true}"
+      SCHEDULER_EMBEDDED: "false"
       SMTP_HOST: "${SMTP_HOST:-mailpit}"
       SMTP_PORT: "${SMTP_PORT:-1025}"
       SMTP_FROM: "${SMTP_FROM:-Veyra <no-reply@veyra.local>}"
@@ -68,7 +78,31 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+
+  worker:
+    image: veyra-bank-core:local
+    pull_policy: never
+    restart: unless-stopped
+    init: true
+    command: python -m app.worker
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://bank_user:bank_password123@postgres:5432/bank_db"
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - ./app:/app/app:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,redis; r=redis.from_url(os.environ['REDIS_URL']); assert r.exists('veyra:worker:'+os.environ['HOSTNAME']+':heartbeat')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
+  redis_data:

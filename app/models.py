@@ -34,6 +34,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     settings: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}", nullable=False)
     token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole),
         default=UserRole.CUSTOMER,

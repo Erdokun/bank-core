@@ -12,8 +12,10 @@ function workspace(options={}){
   const w=dom.window;
   const NativeDate=w.Date;
   w.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:['2026-11-15T12:00:00Z']));}static now(){return new NativeDate('2026-11-15T12:00:00Z').getTime();}};
-  w.matchMedia=()=>({matches:true});
-  w.fetch=options.fetch||(async()=>{throw Error('offline');});
+  w.matchMedia=()=>({matches:options.reduced!==false});
+  // Funded demo data belongs only to interaction tests. The product starts at zero.
+  if(options.fundedDemo!==false)w.localStorage.setItem('veyra_state_v2:demo@veyra.local',fs.readFileSync('tests/fixtures/funded-demo.json','utf8'));
+  w.fetch=async(path,opts)=>{if(path==='/workspace'&&!options.snapshot)return {ok:false,status:404,headers:new Map([['content-type','application/json']]),json:async()=>({detail:'Not found'})};return (options.fetch||(async()=>{throw Error('offline');}))(path,opts);};
   w.AbortSignal.timeout=()=>undefined;
   w.HTMLElement.prototype.scrollIntoView=function(){};
   w.HTMLElement.prototype.scrollTo=function(){};
@@ -28,11 +30,37 @@ function workspace(options={}){
 }
 const flush=()=>new Promise(resolve=>setTimeout(resolve,30));
 
-test('landing has only Veyra branding and account actions, with explicit demo access',()=>{
+test('a fresh demo starts with zero balances and no fabricated activity',()=>{
+ const x=workspace({fundedDemo:false});try{x.click('.hero [data-action="demo"]');assert.equal(x.$('#balAmt').textContent,'€0.00');assert.equal(x.$('#activityCount').textContent,'0 transactions');assert.equal(x.$('#monthIn').textContent,'€0.00');assert.match(x.$('#spacesList').textContent,/€0.00/);assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+});
+
+test('legacy demo balances are reset once while preserving savings goals',()=>{
+ const x=workspace({fundedDemo:false});try{const state=JSON.parse(fs.readFileSync('tests/fixtures/funded-demo.json','utf8'));delete state.balanceRevision;x.w.localStorage.setItem('veyra_state_v2:demo@veyra.local',JSON.stringify(state));x.click('.hero [data-action="demo"]');assert.equal(x.$('#balAmt').textContent,'€0.00');assert.equal(x.$('#activityCount').textContent,'0 transactions');assert.match(x.$('#spacesList').textContent,/Yaz Tatili/);assert.equal(JSON.parse(x.w.localStorage.getItem('veyra_state_v2:demo@veyra.local')).balanceRevision,1);}finally{x.dom.window.close();}
+});
+
+test('snapshot loads all accounts and saves the selected account on the server',async()=>{
+ const requests=[],user={id:7,full_name:'Test User',email:'test@example.com',settings:{selected_accounts:{EUR:12}}},accounts=[{id:11,kind:'current',currency:'EUR',balance:10000,account_number:'DE111'},{id:12,kind:'current',currency:'EUR',balance:20000,account_number:'DE222'}];
+ const x=workspace({snapshot:true,fetch:async(path,opts)=>{requests.push(path);let data=path==='/auth/login'?{access_token:'snapshot-token'}:path==='/auth/me'?user:path==='/workspace'?{user,accounts,entries:[],recipients:[]}:{};if(path==='/auth/settings'){const body=JSON.parse(opts.body);user.settings.selected_accounts.EUR=body.selected_account_id;data=user.settings;}return {ok:true,status:200,headers:new Map([['content-type','application/json']]),json:async()=>data};}});
+ try{await signInFixture(x);assert.equal(x.$('[data-bal="EUR"]').textContent,'€300.00');assert.equal(x.$('#balAmt').textContent,'€200.00');assert.equal(x.$('#accountSelect').hidden,false);assert.equal(x.$('#accountSelect').value,'12');x.$('#accountSelect').value='11';x.$('#accountSelect').dispatchEvent(new x.w.Event('change'));await flush();assert.equal(x.$('#balAmt').textContent,'€100.00');assert.equal(user.settings.selected_accounts.EUR,11);assert.equal(x.w.localStorage.getItem('veyra_state_v2:test@example.com'),null);assert.ok(requests.includes('/workspace'));assert.ok(!requests.includes('/accounts/me'));assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+});
+
+test('landing theme control updates every control and carries light mode into the workspace',()=>{
+ const x=workspace();try{x.w.localStorage.setItem('veyra-demo-profile',JSON.stringify({id:0,full_name:'Alex Morgan',email:'demo@veyra.local',settings:{theme:'dark'}}));x.click('.landing [data-action="theme"]');assert.equal(x.w.document.documentElement.dataset.theme,'light');assert.equal(x.w.localStorage.getItem('veyra-theme'),'light');assert.equal(x.$('.landing .theme-toggle').getAttribute('aria-label'),'Switch to dark mode');x.click('.hero [data-action="demo"]');assert.equal(x.w.document.documentElement.dataset.theme,'light');x.click('.workspace-tools .theme-toggle');assert.equal(x.w.document.documentElement.dataset.theme,'dark');assert.equal(x.$('.landing .theme-toggle').getAttribute('aria-pressed'),'false');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+});
+
+test('settings tabs animate the selected panel and move their capsule without changing profile data',()=>{
+ const x=workspace({reduced:false});try{const animations=[];x.w.HTMLElement.prototype.animate=function(frames,options){animations.push({id:this.id,frames,options});return {cancel(){}};};x.w.document.documentElement.dataset.reducedMotion='false';x.click('.hero [data-action="demo"]');x.click('.who');x.click('[data-settings-tab="preferences"]');assert.equal(x.$('.settings-tabs').style.getPropertyValue('--active-tab'),'1');assert.equal(x.$('#pane-personal').hidden,true);assert.equal(x.$('#pane-preferences').hidden,false);assert.equal(x.$('#profileName').value,'Alex Morgan');assert.ok(animations.some(a=>a.id==='pane-preferences'));x.click('[data-settings-tab="security"]');assert.equal(x.$('.settings-tabs').style.getPropertyValue('--active-tab'),'2');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+});
+
+test('demo deletion requires typed confirmation and removes only the current demo data',async()=>{
+ const x=workspace();try{x.click('.hero [data-action="demo"]');x.click('.who');x.w.localStorage.setItem('unrelated','keep');x.click('[data-action="delete-account"]');assert.equal(x.$('#m-delete').hidden,false);assert.equal(x.$('#deleteRequestF').hidden,true);x.submit('#deleteConfirmF');assert.match(x.$('#deleteErr').textContent,/Type DELETE/);assert.equal(x.$('#app').hidden,false);x.input('#deleteConfirmation','DELETE');x.submit('#deleteConfirmF');await flush();assert.equal(x.$('#app').hidden,true);assert.equal(x.w.sessionStorage.getItem('veyra_token'),null);assert.equal(x.w.localStorage.getItem('veyra-demo-profile'),null);assert.equal(x.w.localStorage.getItem('veyra_state_v2:demo@veyra.local'),null);assert.equal(x.w.localStorage.getItem('unrelated'),'keep');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+});
+
+test('landing preserves Veyra branding and account actions, with explicit demo access',()=>{
   const x=workspace({theme:'light'});
   try{
     assert.equal(x.$('.logo').textContent,'Veyra');
-    assert.equal(x.$('.landing [data-action="theme"]'),null);
+    assert.ok(x.$('.landing [data-action="theme"]'));
     assert.equal(x.$('.landing .logo small'),null);
     assert.equal(x.$('.hero h1').textContent,'Your money.A wider perspective.');
     x.click('.hero [data-action="demo"]');
@@ -43,6 +71,20 @@ test('landing has only Veyra branding and account actions, with explicit demo ac
     assert.equal(x.$('#activityCount').textContent,'8 transactions');
     assert.equal(x.errors.length,0);
   }finally{x.dom.window.close();}
+});
+
+test('cash flow switches periods using real activity and motion preference persists',async()=>{
+ const x=workspace();try{
+  x.click('.hero [data-action="demo"]');assert.match(x.$('#cashflowChart').getAttribute('aria-label'),/Last 7 days: €330.58 in, €105.00 out. 4 transactions./);assert.equal(x.w.document.querySelectorAll('#cashflowChart .chart-column').length,7);
+  x.click('[data-chart-days="30"]');assert.equal(x.w.document.querySelectorAll('#cashflowChart .chart-column').length,10);assert.match(x.$('#cashflowChart').getAttribute('aria-label'),/Last 30 days/);assert.equal(x.$('[data-chart-days="30"]').getAttribute('aria-pressed'),'true');
+  assert.equal(x.$('[data-filter="all"]').getAttribute('aria-pressed'),'true');x.click('[data-filter="cur"]');assert.equal(x.$('#activityCount').textContent,'4 transactions');assert.equal(x.$('[data-chart-days="30"]').getAttribute('aria-pressed'),'true');
+  x.click('.who');x.click('[data-settings-tab="preferences"]');x.$('#prefMotion').checked=true;x.submit('#preferencesF');await flush();assert.equal(x.w.document.documentElement.dataset.reducedMotion,'true');assert.equal(x.w.localStorage.getItem('veyra-reduced-motion'),'true');
+  x.click('#m-profile [data-close]');x.click('.who');x.click('[data-settings-tab="preferences"]');assert.equal(x.$('#prefMotion').checked,true);assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
+});
+
+test('demo payments hub can transition into personal sign-in, and get started opens registration',async()=>{
+ const x=workspace();try{x.click('.hero [data-action="demo"]');x.click('[data-action="banking"]');await flush();x.click('[data-action="personal-signin"]');assert.equal(x.$('#m-signin').hidden,false);assert.equal(x.$('#app').hidden,true);assert.equal(x.w.sessionStorage.getItem('veyra_token'),null);x.click('#m-signin [data-close]');await new Promise(resolve=>setTimeout(resolve,250));x.click('.hero [data-action="demo"]');x.click('.dlogo');x.click('.hero [data-action="register"]');assert.equal(x.$('#m-register').hidden,false);assert.equal(x.$('#regStep1').hidden,false);assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
 });
 
 test('transaction search, direction and currency filters compose',()=>{

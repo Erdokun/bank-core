@@ -5,6 +5,7 @@ from typing import List
 import jwt
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -29,15 +30,18 @@ logger = logging.getLogger("bank-core")
 
 @asynccontextmanager
 async def lifespan(app):
-    worker = asyncio.create_task(scheduler_loop())
-    yield
-    worker.cancel()
+    worker = asyncio.create_task(scheduler_loop()) if os.getenv("SCHEDULER_EMBEDDED", "true").lower() == "true" else None
     try:
-        await worker
-    except asyncio.CancelledError:
-        pass
-    await engine.dispose()
-    await redis_client.aclose()
+        yield
+    finally:
+        if worker:
+            worker.cancel()
+            try:
+                await worker
+            except asyncio.CancelledError:
+                pass
+        await engine.dispose()
+        await redis_client.aclose()
 
 
 app = FastAPI(
@@ -49,6 +53,11 @@ app = FastAPI(
 
 # Bearer token security scheme for Swagger UI Authorize button
 security_scheme = HTTPBearer()
+
+
+@app.exception_handler(aioredis.RedisError)
+async def cache_unavailable(request, exc):
+    return JSONResponse(status_code=503, content={"detail": "The service is reconnecting. Please try again shortly."}, headers={"Retry-After": "5"})
 
 
 async def get_current_user(
@@ -74,7 +83,7 @@ async def get_current_user(
     result = await db.execute(query)
     user = result.scalar_one_or_none()
 
-    if not user or payload.get("ver", 0) != user.token_version:
+    if not user or user.deleted_at is not None or payload.get("ver", 0) != user.token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User no longer exists."
@@ -182,7 +191,7 @@ async def login_user(
     user = result.scalar_one_or_none()
 
     valid_password = await security.verify_password_async(payload.password, user.hashed_password if user else security.DUMMY_PASSWORD_HASH)
-    if not user or not valid_password:
+    if not user or user.deleted_at is not None or not valid_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
@@ -227,6 +236,8 @@ async def create_account(
     Creates a new bank account bound to the currently authenticated user.
     """
     guards.require_customer(current_user)
+    current_user = (await db.execute(select(models.User).where(models.User.id == current_user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+    guards.require_active(current_user)
     generated_iban = generate_iban(payload.currency)
     owner_name = payload.owner_name if payload.owner_name else current_user.full_name
 
@@ -365,6 +376,14 @@ async def readiness(db=Depends(get_db), redis=Depends(get_redis)):
     except Exception:
         raise HTTPException(503, "Database or cache is unavailable.")
     return {"status": "ready", "database": "up", "redis": "up"}
+
+
+@app.get("/health/worker", tags=["System"])
+async def worker_health(redis=Depends(get_redis)):
+    heartbeat = await redis.get("veyra:worker:heartbeat")
+    if not heartbeat:
+        raise HTTPException(503, "The background worker is not reporting a heartbeat.")
+    return {"status": "ready", "scheduler": "up", "last_poll": heartbeat}
 
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
