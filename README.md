@@ -15,7 +15,7 @@ Migrations run automatically. Existing database volumes are preserved.
 - Development email inbox: [localhost:8025](http://localhost:8025/)
 - Dependency readiness: [localhost:8000/health/ready](http://localhost:8000/health/ready)
 
-Choose **Get started**, enter a test email, and read its verification code in the local inbox (or your real inbox after configuring Gmail below). Verified registration provisions EUR, USD, GBP and TRY accounts with zero balances. Open **Payments hub → Add money** to fund a test balance. These credits are recorded against sandbox clearing accounts, with equal debit and credit entries.
+Choose **Get started**, select your currency, enter your email, and verify its code. Registration opens only the selected currency with a zero balance and uses it as your default workspace currency. **Dashboard → Add currency** opens additional EUR, USD, GBP, TRY, CHF, CAD or AUD accounts at zero; retries reuse the same currency account. Existing accounts are preserved. **Settings → Preferences** changes your default currency. Open **Payments hub → Add money** to fund a sandbox balance. These credits are recorded against sandbox clearing accounts, with equal debit and credit entries.
 
 **Explore the demo** is a separate browser-local preview that now starts with zero balances, zero savings and no fabricated transaction history. Older demo caches are reset once while their savings goal names are preserved. Demo money never becomes an authenticated account balance. Funded demo data exists only in automated test fixtures. The Payments hub requires a backend account.
 
@@ -32,6 +32,10 @@ The template uses `smtp.gmail.com:587` with STARTTLS, as documented in [Google's
 docker compose up -d --no-deps --force-recreate api
 # Validate the loaded configuration without sending mail or printing secrets.
 docker compose exec -T api python -m app.email_delivery
+# Verify TLS and Gmail login without sending a message.
+docker compose exec -T api python -m app.email_delivery --check-connection
+# Send one diagnostic email only to the configured sender's own inbox.
+docker compose exec -T api python -m app.email_delivery --send-test
 ```
 
 Request a registration code for your own email through **Get started** to verify delivery. Registration, two-step login, security changes and password resets all use this transport. Check Spam as well as Inbox. SMTP acceptance does not guarantee inbox placement. Without your sender credentials, the application continues to use the existing local Mailpit configuration; real Gmail delivery cannot be verified yet.
@@ -40,7 +44,7 @@ Request a registration code for your own email through **Get started** to verify
 
 | Area | Behavior |
 | --- | --- |
-| Accounts | Four settlement currencies, ownership checks, savings spaces, deposits and withdrawals between owned accounts |
+| Accounts | Seven settlement currencies, chosen-currency onboarding, idempotent additional currency accounts, ownership checks, savings spaces and transfers between owned accounts |
 | Transfers | Atomic settlement, positive integer minor units, ordered row locks, durable per-user idempotency and request fingerprint checks |
 | Currency exchange | Reviewed, expiring Frankfurter reference-rate quotes; four balanced journal legs; durable execution replay |
 | Sandbox card | Online purchases, contactless and ATM simulations; freeze/channel controls, per-payment contactless limit, aggregate daily spending and ATM limits |
@@ -107,4 +111,4 @@ External SEPA/SWIFT/FAST settlement, card-network authorization/issuance, real c
 
 Local email testing uses [Mailpit's API](https://mailpit.axllent.org/docs/api-v1/). The landing scene uses CSS perspective without external textures, a canvas or an autonomous animation loop. Scroll updates are batched through animation frames and suspend while the dashboard is open. Settings tabs have a moving capsule and cancellable content transitions; reduced motion is respected. Typography and workspace dimensions scale with the viewport from 1280×720 through 3840×2160, with separate tablet and mobile layouts. Inter is requested from Google Fonts with a system-font fallback.
 
-Account deletion is available under **Settings → Profile → Delete account**. The server verifies the current password, emails a separate one-time deletion code, and requires the literal confirmation `DELETE`. All currency and savings balances must be zero. Deletion anonymizes the user row, removes profile preferences and saved recipients, closes their accounts, cancels their pending scheduled payments, and invalidates every session. Ledger entries and existing audit records remain immutable; this is not an erasure of transaction history. Incoming payments serialize against the same account locks and cannot fund a closed account. Demo deletion removes only the demo's browser-local profile and state.
+Account deletion is available under **Settings → Profile → Delete account**. The server verifies the current password and emails a separate one-time deletion code. Enter that code and choose **Delete Account**; no typed confirmation word is needed. All currency and savings balances must be zero. Deletion anonymizes the user row, removes profile preferences and saved recipients, closes their accounts, cancels their pending scheduled payments, and invalidates every session. Ledger entries and existing audit records remain immutable; this is not an erasure of transaction history. Incoming payments serialize against the same account locks and cannot fund a closed account. Demo deletion removes only the demo's browser-local profile and state.

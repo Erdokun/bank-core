@@ -63,3 +63,30 @@ def test_refused_recipient_is_not_reported_as_dispatched(gmail, monkeypatch):
     monkeypatch.setattr("app.email_delivery.smtplib.SMTP", factory)
     with pytest.raises(smtplib.SMTPRecipientsRefused):
         deliver(EmailMessage(), SmtpConfig.from_environment())
+
+
+def test_cli_connection_check_authenticates_without_sending(gmail, monkeypatch, capsys):
+    from app.email_delivery import main
+    factory = MagicMock()
+    monkeypatch.setattr('app.email_delivery.smtplib.SMTP', factory)
+    monkeypatch.setattr('sys.argv', ['email_delivery', '--check-connection'])
+    main()
+    server = factory.return_value.__enter__.return_value
+    server.login.assert_called_once()
+    server.send_message.assert_not_called()
+    assert 'authentication succeeded' in capsys.readouterr().out
+
+
+def test_cli_never_prints_raw_authentication_errors_or_credentials(gmail, monkeypatch, capsys):
+    import smtplib
+    from app.email_delivery import main
+    factory = MagicMock()
+    factory.return_value.__enter__.return_value.login.side_effect = smtplib.SMTPAuthenticationError(535, b'secret-must-stay-private')
+    monkeypatch.setattr('app.email_delivery.smtplib.SMTP', factory)
+    monkeypatch.setattr('sys.argv', ['email_delivery', '--check-connection'])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 1
+    output = capsys.readouterr().out
+    assert 'secret-must-stay-private' not in output and 'abcdefghijklmnop' not in output
+    assert 'SMTP login rejected' in output

@@ -17,11 +17,11 @@ async def test_deletion_requires_password_zero_balances_and_confirmation_code():
         a = await account(c, h, 100)
         assert (await c.post('/auth/account/deletion-code', headers=h, json={'password':'wrong'})).status_code == 401
         assert (await c.post('/auth/account/deletion-code', headers=h, json={'password':PASSWORD})).status_code == 409
-        response = await c.request('DELETE', '/auth/account', headers=h, json={'password':PASSWORD,'code':'123456','confirmation':'DELETE'})
+        response = await c.request('DELETE', '/auth/account', headers=h, json={'password':PASSWORD,'code':'123456'})
         assert response.status_code == 409
         assert (await c.get('/auth/me', headers=h)).status_code == 200
         assert (await c.get('/accounts/me', headers=h)).json()[0]['balance'] == 100
-        assert (await c.request('DELETE', '/auth/account', json={'password':PASSWORD,'code':'123456','confirmation':'DELETE'})).status_code in (401,403)
+        assert (await c.request('DELETE', '/auth/account', json={'password':PASSWORD,'code':'123456'})).status_code in (401,403)
 
 
 @pytest.mark.asyncio
@@ -38,8 +38,8 @@ async def test_delete_anonymizes_profile_revokes_sessions_closes_accounts_and_pr
         journal_before = await sql('SELECT count(*) FROM ledger_entries WHERE account_id=:id', {'id':source['id']})
         assert (await c.post('/auth/account/deletion-code', headers=h, json={'password':PASSWORD})).status_code == 200
         code = await email_code(user['email'],'account deletion')
-        body = {'password':PASSWORD,'code':code,'confirmation':'DELETE'}
-        assert (await c.request('DELETE','/auth/account',headers=h,json={**body,'confirmation':'NO'})).status_code == 422
+        body = {'password':PASSWORD,'code':code}
+        assert (await c.request('DELETE','/auth/account',headers=h,json={'password':PASSWORD})).status_code == 422
         wrong = '000000' if code != '000000' else '111111'
         assert (await c.request('DELETE','/auth/account',headers=h,json={**body,'code':wrong})).status_code == 400
         deleted = await c.request('DELETE','/auth/account',headers=h,json=body)
@@ -67,7 +67,7 @@ async def test_incoming_payment_and_deletion_serialize_without_losing_money():
         source = await account(c,sender_h,100)
         assert (await c.post('/auth/account/deletion-code',headers=h,json={'password':PASSWORD})).status_code == 200
         code = await email_code(user['email'],'account deletion')
-        deleted, sent = await asyncio.gather(c.request('DELETE','/auth/account',headers=h,json={'password':PASSWORD,'code':code,'confirmation':'DELETE'}),c.post('/transfers',headers=sender_h,json=transfer(source,dest,100)))
+        deleted, sent = await asyncio.gather(c.request('DELETE','/auth/account',headers=h,json={'password':PASSWORD,'code':code}),c.post('/transfers',headers=sender_h,json=transfer(source,dest,100)))
         assert (deleted.status_code,sent.status_code) in [(200,409),(409,200)]
         balances = await sql('SELECT sum(balance) FROM accounts WHERE id IN (:src,:dst)',{'src':source['id'],'dst':dest['id']})
         assert balances[0][0] == 100

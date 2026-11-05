@@ -1,6 +1,17 @@
 /* Resolution-independent rhythm. 720p → 4K scales composition, not empty space. */
 :root{font-size:clamp(14px,calc(6.4px + .5vw),26px);--ease:cubic-bezier(.22,1,.36,1)}
 html{scroll-padding-top:6rem}
+html:has(.modal.is-open),body:has(.modal.is-open){overflow:hidden!important}
+.currency-heading{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;margin-top:2.5rem}
+.currency-heading .sec-p{margin-top:.4rem}.currency-add{flex:none;gap:.65rem;border:0!important;background:var(--faint);min-height:3rem;font-size:1rem}
+.currency-add>span{font-size:1.45rem;font-weight:400;line-height:1}
+.app .cur-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));margin-top:1.3rem}
+.app .cur-txt{min-width:0}.app .cur-txt small{white-space:normal;line-height:1.5}
+.currency-intro-icon{width:4rem;height:4rem;border-radius:1.4rem;display:grid;place-items:center;background:var(--faint);margin-bottom:1.6rem}
+.currency-intro-icon .ic{width:1.8rem;height:1.8rem}
+#m-currency .btn-ink,#m-delete #deleteConfirmBtn{font-size:1.2rem;font-weight:600;min-height:3.8rem;letter-spacing:-.02em}
+#m-delete #deleteCode{font-size:1.7rem;text-align:center;letter-spacing:.4em;min-height:3.8rem;padding-left:1.5rem;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.currency-heading{margin-top:1.8rem;gap:.8rem}.currency-heading .sec-p{max-width:13rem}.currency-add{padding:.7rem .9rem!important;font-size:.9rem}.app .cur-row{grid-template-columns:repeat(2,minmax(0,1fr))}.app .cur-row>.cur:only-child{grid-column:1/-1}}
 .landing .navbar{height:5.5rem;border:0;background:#050505b8}
 .landing .navrow{height:100%;max-width:108rem;padding:0 3rem}
 .landing .logo{font-size:1.9rem;gap:.4rem}.landing .logo svg{width:2rem;height:2rem}
@@ -17,6 +28,12 @@ html{scroll-padding-top:6rem}
 .hero-copy{transform-style:flat}.hero-copy :is(h1,p,.hero-cta){transform:none}
 .hero-cta{margin-top:2.4rem;gap:.9rem}
 .hero-object{height:36rem;translate:0 calc(var(--hero-drift)*4rem);transform:rotateZ(calc(var(--hero-drift)*8deg)) scale(calc(1 - var(--hero-drift)*.08))}
+/* The ambient light fades inside its bounds, so a centered hero never exposes a rectangle. */
+.landing .hero .galaxy-background{display:none}
+.object-glow{inset:-8% -15%;background:radial-gradient(ellipse,#ffffff0c 0%,#fff0 66%);filter:none;pointer-events:none}
+html[data-theme] :is(.app,.modal .sheet,.landing) :focus-visible{outline:2px solid var(--text,#fff);outline-offset:3px}
+.modal :is(.li,.inp,.otp input):focus,.modal .amt-wrap:focus-within{border-color:var(--text,#fff);box-shadow:0 0 0 4px color-mix(in srgb,var(--text,#fff) 10%,transparent)}
+.modal .amt-wrap input:focus-visible{outline:0}
 .metal-card{width:23rem;max-width:85%;padding:2rem 1.8rem;border:0;border-radius:1.8rem;box-shadow:inset 1px 1px #fff9,inset -1px -1px #fff2,5px 5px #222,7px 7px #5556,2rem 3rem 5rem #000;transition:transform .8s var(--ease);animation-duration:1s}
 .metal-card::after{background:linear-gradient(110deg,transparent 20%,#ffffff08 45%,transparent 70%)}
 .metal-top{gap:1rem}.metal-brand{font-size:1.9rem}.metal-tier{font-size:.8rem;letter-spacing:.05em}

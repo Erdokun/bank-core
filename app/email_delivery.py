@@ -1,5 +1,6 @@
 """Validated SMTP transport. Credentials stay in the server environment."""
 import argparse
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 from email.utils import parseaddr
@@ -51,7 +52,8 @@ class SmtpConfig:
         return cls(host, port, sender, username, password, use_ssl, use_tls)
 
 
-def deliver(message: EmailMessage, config: SmtpConfig):
+@contextmanager
+def authenticated_connection(config: SmtpConfig):
     context = ssl.create_default_context()
     if config.use_ssl:
         connection = smtplib.SMTP_SSL(config.host, config.port, timeout=12, context=context)
@@ -64,14 +66,21 @@ def deliver(message: EmailMessage, config: SmtpConfig):
             server.ehlo()
         if config.username:
             server.login(config.username, config.password)
+        yield server
+
+
+def deliver(message: EmailMessage, config: SmtpConfig):
+    with authenticated_connection(config) as server:
         refused = server.send_message(message, from_addr=parseaddr(config.sender)[1])
         if refused:
             raise smtplib.SMTPRecipientsRefused(refused)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate Veyra SMTP configuration without sending email or printing credentials.")
-    parser.parse_args()
+    parser = argparse.ArgumentParser(description="Check Veyra SMTP without printing credentials.")
+    parser.add_argument('--check-connection', action='store_true', help='Connect with TLS and authenticate without sending mail.')
+    parser.add_argument('--send-test', action='store_true', help='Send a delivery check only to the configured sender address.')
+    args = parser.parse_args()
     try:
         config = SmtpConfig.from_environment()
     except ValueError as error:
@@ -79,7 +88,27 @@ def main():
         raise SystemExit(1) from None
     transport = "SSL" if config.use_ssl else "STARTTLS" if config.use_tls else "local plaintext"
     print(f"SMTP configuration valid: {config.host}:{config.port} ({transport}).")
-    print("No message sent. Request an account verification code to check inbox delivery.")
+    try:
+        if args.send_test:
+            message = EmailMessage()
+            message['From'] = config.sender
+            message['To'] = parseaddr(config.sender)[1]
+            message['Subject'] = 'Veyra Gmail bağlantısı hazır'
+            message.set_content('Veyra e-posta gönderim testi başarılı.\n\nGmail bağlantınız kuruldu. Artık uygulamadan isteyeceğiniz doğrulama kodları bu bağlantı üzerinden gönderilecek.\nBu yalnızca bir bağlantı testidir; hesabınızda herhangi bir değişiklik yapılmadı.\n\nVeyra')
+            deliver(message, config)
+            print('Test message accepted by SMTP for the configured sender. Check Inbox and Spam to confirm arrival.')
+        elif args.check_connection:
+            with authenticated_connection(config):
+                pass
+            print('TLS connection and SMTP authentication succeeded. No message sent.')
+        else:
+            print('No connection attempted. Use --check-connection to verify SMTP login or --send-test for an inbox check.')
+    except smtplib.SMTPAuthenticationError:
+        print('SMTP login rejected. Check the sender address and Google app password in .env, then recreate the API container.')
+        raise SystemExit(1) from None
+    except (OSError, smtplib.SMTPException):
+        print('SMTP connection or delivery failed. Check network access and SMTP host, port and TLS settings. No credentials were logged.')
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

@@ -14,8 +14,9 @@ function uuid(){
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);});
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-var SYM={EUR:'€',USD:'$',TRY:'₺',GBP:'£'};
-var CUR_NAME={EUR:'Euro',USD:'US Dollar',TRY:'Turkish Lira',GBP:'British Pound'};
+var SYM={EUR:'€',USD:'$',TRY:'₺',GBP:'£',CHF:'CHF ',CAD:'C$ ',AUD:'A$ '};
+var CUR_NAME={EUR:'Euro',USD:'US Dollar',TRY:'Turkish Lira',GBP:'British Pound',CHF:'Swiss Franc',CAD:'Canadian Dollar',AUD:'Australian Dollar'};
+var CURRENCY_CODES=Object.keys(CUR_NAME);
 function money(v,c,plus){
   var n=Math.round(v*100)/100;
   var s=Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -98,6 +99,7 @@ var Modals={
     el.hidden=false;
     requestAnimationFrame(function(){if(Modals.stack.some(function(s){return s.el===el;}))el.classList.add('is-open');});
     setTimeout(function(){
+      if(el.contains(document.activeElement))return;
       var f=el.querySelector('[data-autofocus]')||Array.from(el.querySelectorAll('input:not([type=hidden]):not([readonly]):not([type=radio]):not([type=range]),select,textarea')).find(function(field){return field.getClientRects().length>0;});
       if(f&&f.offsetParent!==null&&Modals.stack.some(function(s){return s.el===el;})) f.focus();
     },80);
@@ -111,7 +113,7 @@ var Modals={
     clearTimeout(el._veyraCloseTimer);el._veyraCloseTimer=setTimeout(function(){el.hidden=true;},350);
     if(el.id==='m-register'){Otp.teardown();Otp.password=null;$('#rgPass').value='';}
     if(el.id==='m-signin'){clearInterval(signInResendTimer);$('#siPass').value='';$('#siCode').value='';}
-    if(el.id==='m-delete'){DeleteFlow.generation++;$('#deletePassword').value='';$('#deleteCode').value='';$('#deleteConfirmation').value='';}
+    if(el.id==='m-delete'){DeleteFlow.generation++;$('#deletePassword').value='';$('#deleteCode').value='';}
     if(entry&&entry.ret&&entry.ret.focus&&document.body.contains(entry.ret)) setTimeout(function(){entry.ret.focus();},10);
   }
 };
@@ -368,9 +370,41 @@ var Mail={
 /* =====================================================================
    7. BANKING STATE
    ===================================================================== */
-var RATES={EUR:1,USD:1.0842,TRY:37.18,GBP:0.8436};
+var RATES={EUR:1,USD:1.0842,TRY:37.18,GBP:0.8436,CHF:.94,CAD:1.48,AUD:1.64};
 function rate(from,to){return RATES[to]/RATES[from];}
 function toCur(v,from,to){return v*rate(from,to);}
+
+function ownedCurrencies(){
+ if(Session.mode==='live'){var owned=CURRENCY_CODES.filter(function(c){return Live.accounts.some(function(a){return a.kind==='current'&&a.currency===c;});});return owned.length?owned:[preferences().primary_currency||S.active||'EUR'];}
+ return CURRENCY_CODES.filter(function(c){return Object.prototype.hasOwnProperty.call(S.wallets,c);});
+}
+function currencyOptions(select,codes){
+ if(select.dataset.currencyOptions===codes.join(','))return;
+ var previous=select.value;select.dataset.currencyOptions=codes.join(',');select.innerHTML=codes.map(function(c){return '<option value="'+c+'">'+esc(c+' · '+CUR_NAME[c])+'</option>';}).join('');
+ select.value=codes.includes(previous)?previous:codes.includes(S.active)?S.active:codes[0]||'';
+}
+function syncCurrencyPickers(codes){
+ ['sdCur','tpCur','cvFrom','cvTo','snCur','prefCurrency'].forEach(function(id){currencyOptions(document.getElementById(id),codes);});
+}
+function openCurrencyAccount(){
+ var available=CURRENCY_CODES.filter(function(c){return !ownedCurrencies().includes(c);});
+ if(!available.length){toast('All supported currencies are already in your workspace.');return;}
+ currencyOptions($('#newCurrency'),available);$('#currencyErr').textContent='';$('#currencyCreateBtn').disabled=false;Modals.open('m-currency');
+}
+$('#currencyF').addEventListener('submit',async function(e){
+ e.preventDefault();var currency=$('#newCurrency').value,button=$('#currencyCreateBtn'),token=Session.token;
+ if(!CURRENCY_CODES.includes(currency)||ownedCurrencies().includes(currency))return;
+ $('#currencyErr').textContent='';btnBusy(button,true,'Adding currency…');
+ if(Session.mode==='live'){
+  var result=await api('/accounts/currencies',{method:'POST',body:{currency:currency}});
+  if(Session.token!==token)return;
+  if(!result.ok){btnBusy(button,false);$('#currencyErr').textContent=result.offline?'Connection lost. Try again to check your account.':apiErr(result);return;}
+  if(!Live.accounts.some(function(a){return a.id===result.data.id;}))Live.accounts.push(result.data);
+  S.active=currency;applyLiveAccounts(Live.accounts);
+ }else{S.wallets[currency]=0;S.active=currency;}
+ refresh();btnBusy(button,false);Modals.close('m-currency');toast('Your '+currency+' account is ready.');
+});
+currencyOptions($('#rgCurrency'),CURRENCY_CODES);
 
 var DEMO_IBAN={
   EUR:'CH93 0076 2011 6238 5295 7',
@@ -418,7 +452,8 @@ function loadState(){
 function saveState(){if(Session.mode==='live')return;try{localStorage.setItem(stateKey(),JSON.stringify(S));}catch(e){}}
 function selectedLiveAccount(currency){var id=(preferences().selected_accounts||{})[currency];return Live.accounts.find(function(a){return a.kind==='current'&&a.currency===currency&&a.id===id;})||Live.accounts.find(function(a){return a.kind==='current'&&a.currency===currency;})||null;}
 function applyLiveAccounts(accounts){
- Live.accounts=accounts;Object.keys(S.wallets).forEach(function(c){var account=selectedLiveAccount(c);S.wallets[c]=account?account.balance/100:0;});
+ Live.accounts=accounts;CURRENCY_CODES.forEach(function(c){var account=selectedLiveAccount(c);S.wallets[c]=account?account.balance/100:0;});
+ var owned=ownedCurrencies();if(owned.length&&!owned.includes(S.active))S.active=owned.includes(preferences().primary_currency)?preferences().primary_currency:owned[0];
  S.spaces=accounts.filter(function(a){return a.kind==='space';}).map(function(a){return {id:String(a.id),name:a.owner_name,goal:a.goal/100,saved:a.balance/100,cur:a.currency,icon:'shield',live:true};});Live.primary=selectedLiveAccount(S.active);
 }
 function isLive(){return Session.mode==='live'&&!!Live.primary;}
@@ -435,7 +470,7 @@ function logActivity(a){
 function ibanFor(cur){
   var live=selectedLiveAccount(cur);
   if(live) return groupIban(live.account_number);
-  return Session.mode==='live'?'Account not available':DEMO_IBAN[cur];
+  return Session.mode==='live'?'Account not available':DEMO_IBAN[cur]||'Demo '+cur+' account';
 }
 
 /* =====================================================================
@@ -467,6 +502,10 @@ function renderHeader(){
   $('#totalAll').textContent=live?money(Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===S.active;}).reduce(function(sum,a){return sum+a.balance/100;},0),S.active):'≈ '+money(total,S.active);
 }
 function renderCurrencies(){
+  var currencies=ownedCurrencies(),row=$('#curRow');
+  if(row.dataset.currencies!==currencies.join(',')){
+    row.dataset.currencies=currencies.join(',');row.innerHTML=currencies.map(function(c){return '<button type="button" class="cur" role="tab" data-cur="'+c+'" aria-selected="false"><span class="cur-sym">'+esc(SYM[c].trim())+'</span><span class="cur-txt"><small data-code="'+c+'">'+c+' · '+esc(CUR_NAME[c])+'</small><b data-bal="'+c+'"></b></span></button>';}).join('');
+  }
   $$('#curRow .cur').forEach(function(b){
     var c=b.dataset.cur;
     b.setAttribute('aria-selected',c===S.active?'true':'false');
@@ -474,6 +513,8 @@ function renderCurrencies(){
     var balance=Session.mode==='live'?Live.accounts.filter(function(a){return a.kind==='current'&&a.currency===c;}).reduce(function(sum,a){return sum+a.balance/100;},0):S.wallets[c];
     $('[data-bal]',b).textContent=money(balance,c);
   });
+  $('.currency-add').hidden=currencies.length===CURRENCY_CODES.length;
+  syncCurrencyPickers(currencies);
 }
 function renderBalance(){
   var c=S.active, v=S.wallets[c], s=money(v,c), dot=s.lastIndexOf('.');
@@ -496,7 +537,7 @@ function renderCard(){
   vc.classList.toggle('is-frozen',S.card.frozen);
   $('#cardBal').textContent=money(S.wallets[S.active],S.active);
   $('#cardName').textContent=((Session.user&&Session.user.full_name)||'VEYRA CLIENT').toUpperCase();
-  $('#cardIban').textContent=ibanFor('EUR');
+  $('#cardIban').textContent=ibanFor(S.active);
   var f=$('#ctlFreeze');f.setAttribute('aria-pressed',S.card.frozen?'true':'false');
   $('#ctlFreezeSt').textContent=S.card.frozen?'Frozen — tap to unfreeze':'Card is active';
   var o=$('#ctlOnline');o.setAttribute('aria-pressed',S.card.online?'true':'false');
@@ -564,7 +605,7 @@ var App={
   open:function(){
     loadState();
     Live.accounts=[];Live.primary=null;Live.entries=[];
-    var prefs=(Session.user&&Session.user.settings)||{};if(prefs.primary_currency)S.active=prefs.primary_currency;if(prefs.theme)setTheme(prefs.theme,false);
+    var prefs=(Session.user&&Session.user.settings)||{};if(prefs.primary_currency)S.active=prefs.primary_currency;if(!Object.prototype.hasOwnProperty.call(S.wallets,S.active))S.wallets[S.active]=0;if(prefs.theme)setTheme(prefs.theme,false);
     lastInteraction=Date.now();
     var app=$('#app');app.hidden=false;
     document.body.classList.add('app-open');
@@ -852,9 +893,10 @@ $('#topF').addEventListener('submit',async function(e){
    ===================================================================== */
 var liveRates=Object.assign({},RATES),currentQuote=null;
 function openConvert(){
+  if(ownedCurrencies().length<2){openCurrencyAccount();toast('Add another currency to convert between your accounts.');return;}
   currentQuote=null;
   $('#cvFrom').value=S.active;
-  $('#cvTo').value=S.active==='EUR'?'USD':'EUR';
+  $('#cvTo').value=ownedCurrencies().find(function(c){return c!==S.active;});
   $('#cvErr').textContent='';
   if(!(parseAmt($('#cvAmt').value)>0)) $('#cvAmt').value='100';
   calcConvert();Modals.open('m-convert');
@@ -1376,10 +1418,9 @@ $('#deleteRequestF').addEventListener('submit',async function(e){
 });
 $('#deleteConfirmF').addEventListener('submit',async function(e){
  e.preventDefault();var error=$('#deleteErr'),button=$('#deleteConfirmBtn'),generation=DeleteFlow.generation;error.textContent='';
- if($('#deleteConfirmation').value!=='DELETE'){error.textContent='Type DELETE exactly to confirm.';return;}
  if(Session.mode==='live'&&!/^\d{6}$/.test($('#deleteCode').value)){error.textContent='Enter the six-digit code from your email.';return;}
  btnBusy(button,true,'Deleting account…');
- if(Session.mode==='live'){var response=await api('/auth/account',{method:'DELETE',body:{password:$('#deletePassword').value,code:$('#deleteCode').value,confirmation:'DELETE'}});if(generation!==DeleteFlow.generation){btnBusy(button,false);return;}if(!response.ok){btnBusy(button,false);error.textContent=response.offline?'The service is unavailable. Your deletion could not be confirmed.':apiErr(response);return;}}
+ if(Session.mode==='live'){var response=await api('/auth/account',{method:'DELETE',body:{password:$('#deletePassword').value,code:$('#deleteCode').value}});if(generation!==DeleteFlow.generation){btnBusy(button,false);return;}if(!response.ok){btnBusy(button,false);error.textContent=response.offline?'The service is unavailable. Your deletion could not be confirmed.':apiErr(response);return;}}
  var demo=Session.mode==='demo',key=stateKey();try{localStorage.removeItem(key);if(demo)localStorage.removeItem('veyra-demo-profile');}catch(ignore){}
  btnBusy(button,false);signOut();window.scrollTo({top:0,behavior:'instant'});toast(demo?'Your demo data has been deleted.':'Your Veyra account has been deleted.');
 });
@@ -1441,7 +1482,8 @@ document.addEventListener('click',function(e){
     case 'export-csv': exportActivity();break;
     case 'refresh-data': if(Session.mode==='live')syncLive();else{renderAll();toast('Your demo workspace is up to date.');}break;
     case 'create-currency-account':
-      (async function(){el.disabled=true;var r=await api('/accounts',{method:'POST',body:{currency:S.active,kind:'current'}});el.disabled=false;if(r.ok){await syncLive();toast('Your '+S.active+' account has been created.');}else toast(apiErr(r),true);})();break;
+      openCurrencyAccount();break;
+    case 'add-currency': openCurrencyAccount();break;
     case 'password-visibility': var input=document.getElementById(el.dataset.target);input.type=input.type==='password'?'text':'password';el.textContent=input.type==='password'?'Show':'Hide';el.setAttribute('aria-pressed',input.type==='text'?'true':'false');break;
     case 'to-register': Modals.close('m-signin');setTimeout(openRegister,120);break;
     case 'to-signin': Modals.close('m-register');setTimeout(openSignIn,120);break;

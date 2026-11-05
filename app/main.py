@@ -257,6 +257,27 @@ async def create_account(
     return new_account
 
 
+@app.post("/accounts/currencies", response_model=schemas.AccountResponse, tags=["Accounts"])
+async def open_currency_account(
+    payload: schemas.CurrencyAccountCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Open a zero-balance currency once, including concurrent requests and retries."""
+    guards.require_customer(current_user)
+    locked = (await db.execute(select(models.User).where(models.User.id == current_user.id).with_for_update().execution_options(populate_existing=True))).scalar_one()
+    guards.require_active(locked)
+    existing = (await db.execute(select(models.Account).where(models.Account.user_id == locked.id, models.Account.kind == "current", models.Account.currency == payload.currency).order_by(models.Account.id))).scalars().first()
+    if existing:
+        return existing
+    account = models.Account(user_id=locked.id, account_number=generate_iban(payload.currency), owner_name=locked.full_name, balance=0, currency=payload.currency)
+    db.add(account)
+    ledger.audit(db, locked.id, "account.currency_opened", currency=payload.currency)
+    await db.commit()
+    await db.refresh(account)
+    return account
+
+
 @app.get("/accounts/me", response_model=List[schemas.AccountResponse], tags=["Accounts"])
 async def get_my_accounts(
     current_user: models.User = Depends(get_current_user),

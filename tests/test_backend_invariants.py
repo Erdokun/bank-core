@@ -35,7 +35,8 @@ async def test_email_registration_two_factor_login_and_password_reset_end_to_end
         signup=dict(email=email,code=code,password=password,full_name='Email Flow',primary_currency='EUR')
         verified=await c.post('/auth/otp/verify',json=signup);assert verified.status_code==200,verified.text
         h={'Authorization':'Bearer '+verified.json()['access_token']}
-        assert len((await c.get('/accounts/me',headers=h)).json())==4
+        accounts=(await c.get('/accounts/me',headers=h)).json()
+        assert len(accounts)==1 and accounts[0]['currency']=='EUR' and accounts[0]['balance']==0
         assert (await c.post('/auth/otp/verify',json=signup)).status_code==400
         two_factor={'two_factor':True,'password':password}
         assert (await c.patch('/auth/settings',headers=h,json=two_factor)).status_code==428

@@ -29,7 +29,6 @@ from app.redis_client import get_redis
 from app.email_delivery import SmtpConfig, deliver
 
 log = logging.getLogger("bank-core")
-CURRENCIES = ("EUR", "TRY", "USD", "GBP")
 
 
 def generate_iban(currency):
@@ -93,9 +92,9 @@ async def issue_otp(email, redis, purpose="register"):
     await redis.expire(key, 600)
     try:
         await send_otp_email_smtp(email, code, purpose)
-    except Exception:
+    except Exception as error:
         await redis.delete(key, key + ":cooldown")
-        log.warning("smtp_delivery_failed")
+        log.warning("smtp_delivery_failed type=%s", type(error).__name__)
         raise HTTPException(503, "Email delivery is unavailable. Please try again later.")
 
 
@@ -121,7 +120,7 @@ class SettingsUpdate(BaseModel):
     daily_limit: int | None = Field(default=None, ge=0, le=1000000)
     atm_limit: int | None = Field(default=None, ge=0, le=500000)
     theme: Literal["light", "dark"] | None = None
-    primary_currency: Literal["EUR", "USD", "TRY", "GBP"] | None = None
+    primary_currency: schemas.CurrencyCode | None = None
     hide_balances: bool | None = None
     compact_activity: bool | None = None
     reduced_motion: bool | None = None
@@ -147,7 +146,6 @@ class DeletionRequest(BaseModel):
 
 class AccountDeletion(DeletionRequest):
     code: str = Field(pattern=r"^\d{6}$")
-    confirmation: Literal["DELETE"]
 
 
 class ResetRequest(schemas.OtpSendRequest):
@@ -279,8 +277,7 @@ def register_veyra_routes(app, current_user_dependency):
         db.add(user)
         try:
             await db.flush()
-            for currency in CURRENCIES:
-                db.add(models.Account(user_id=user.id, account_number=generate_iban(currency), owner_name=user.full_name, balance=0, currency=currency))
+            db.add(models.Account(user_id=user.id, account_number=generate_iban(payload.primary_currency), owner_name=user.full_name, balance=0, currency=payload.primary_currency))
             await db.commit()
         except IntegrityError:
             await db.rollback()

@@ -2,11 +2,17 @@ from datetime import datetime
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
+CurrencyCode = Literal["EUR", "TRY", "USD", "GBP", "CHF", "CAD", "AUD"]
+
+
+class CurrencyAccountCreate(BaseModel):
+    currency: CurrencyCode
+
 
 class AccountCreate(BaseModel):
     owner_name: Optional[str] = Field(default=None, max_length=100, examples=["Erdem Celik"])
     initial_balance: Literal[0] = 0
-    currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
+    currency: CurrencyCode = "EUR"
     kind: Literal["current", "space"] = "current"
     goal: int = Field(default=0, ge=0, le=1000000000000)
 
@@ -123,7 +129,7 @@ class OtpVerifyRequest(BaseModel):
     code: str = Field(..., pattern=r"^\d{6}$")
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=2, max_length=100, pattern=r"^\S(?:.*\S)?$")
-    primary_currency: Literal["EUR", "TRY", "USD", "GBP"] = "EUR"
+    primary_currency: CurrencyCode = "EUR"
     purpose: str = Field(default="Personal Daily Banking", max_length=100)
 
 

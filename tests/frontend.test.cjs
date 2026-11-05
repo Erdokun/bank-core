@@ -22,6 +22,7 @@ function workspace(options={}){
   w.scrollTo=function(){};
   if(options.theme)w.document.documentElement.dataset.theme=options.theme;
   w.eval(source);
+  w.eval(fs.readFileSync('app/static/select-controls.js','utf8'));
   const $=s=>w.document.querySelector(s);
   const click=s=>$(s).click();
   const submit=s=>$(s).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
@@ -52,8 +53,20 @@ test('settings tabs animate the selected panel and move their capsule without ch
  const x=workspace({reduced:false});try{const animations=[];x.w.HTMLElement.prototype.animate=function(frames,options){animations.push({id:this.id,frames,options});return {cancel(){}};};x.w.document.documentElement.dataset.reducedMotion='false';x.click('.hero [data-action="demo"]');x.click('.who');x.click('[data-settings-tab="preferences"]');assert.equal(x.$('.settings-tabs').style.getPropertyValue('--active-tab'),'1');assert.equal(x.$('#pane-personal').hidden,true);assert.equal(x.$('#pane-preferences').hidden,false);assert.equal(x.$('#profileName').value,'Alex Morgan');assert.ok(animations.some(a=>a.id==='pane-preferences'));x.click('[data-settings-tab="security"]');assert.equal(x.$('.settings-tabs').style.getPropertyValue('--active-tab'),'2');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
 });
 
-test('demo deletion requires typed confirmation and removes only the current demo data',async()=>{
- const x=workspace();try{x.click('.hero [data-action="demo"]');x.click('.who');x.w.localStorage.setItem('unrelated','keep');x.click('[data-action="delete-account"]');assert.equal(x.$('#m-delete').hidden,false);assert.equal(x.$('#deleteRequestF').hidden,true);x.submit('#deleteConfirmF');assert.match(x.$('#deleteErr').textContent,/Type DELETE/);assert.equal(x.$('#app').hidden,false);x.input('#deleteConfirmation','DELETE');x.submit('#deleteConfirmF');await flush();assert.equal(x.$('#app').hidden,true);assert.equal(x.w.sessionStorage.getItem('veyra_token'),null);assert.equal(x.w.localStorage.getItem('veyra-demo-profile'),null);assert.equal(x.w.localStorage.getItem('veyra_state_v2:demo@veyra.local'),null);assert.equal(x.w.localStorage.getItem('unrelated'),'keep');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
+test('custom preferences picker updates persisted settings and follows programmatic currency swaps',async()=>{
+ const x=workspace();try{
+  x.click('.hero [data-action="demo"]');x.click('.who');x.click('[data-settings-tab="preferences"]');await flush();
+  x.click('#prefCurrency-trigger');x.click('#prefCurrency-trigger-list-option-'+Array.from(x.$('#prefCurrency').options).findIndex(o=>o.value==='GBP'));assert.equal(x.$('#prefCurrency').value,'GBP');
+  x.submit('#preferencesF');await flush();assert.equal(JSON.parse(x.w.localStorage.getItem('veyra-demo-profile')).settings.primary_currency,'GBP');
+  x.click('#m-profile [data-close]');x.click('[data-action="convert"]');await flush();
+  const before=[x.$('#cvFrom').value,x.$('#cvTo').value];x.click('[data-action="cv-swap"]');await flush();
+  assert.equal(x.$('#cvFrom').value,before[1]);assert.match(x.$('#cvFrom-trigger').textContent,new RegExp(before[1]));
+  assert.equal(x.$('#cvTo').value,before[0]);assert.match(x.$('#cvTo-trigger').textContent,new RegExp(before[0]));assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
+});
+
+test('demo deletion needs no typed word and removes only the current demo data',async()=>{
+ const x=workspace();try{x.click('.hero [data-action="demo"]');x.click('.who');x.w.localStorage.setItem('unrelated','keep');x.click('[data-action="delete-account"]');assert.equal(x.$('#m-delete').hidden,false);assert.equal(x.$('#deleteRequestF').hidden,true);assert.equal(x.$('#deleteConfirmation'),null);assert.equal(x.$('#deleteConfirmBtn').textContent,'Delete Account');x.submit('#deleteConfirmF');await flush();assert.equal(x.$('#app').hidden,true);assert.equal(x.w.sessionStorage.getItem('veyra_token'),null);assert.equal(x.w.localStorage.getItem('veyra-demo-profile'),null);assert.equal(x.w.localStorage.getItem('veyra_state_v2:demo@veyra.local'),null);assert.equal(x.w.localStorage.getItem('unrelated'),'keep');assert.equal(x.errors.length,0);}finally{x.dom.window.close();}
 });
 
 test('landing preserves Veyra branding and account actions, with explicit demo access',()=>{
@@ -201,7 +214,7 @@ test('live accounts have no sample data and exchange requires a reviewed quote b
   try{
     x.click('#navSignIn');x.input('#siEmail',user.email);x.input('#siPass','ExistingPassword123!');x.submit('#signinForm');await flush();
     assert.equal(x.$('#app').hidden,false);assert.equal(x.$('[data-bal="EUR"]').textContent,'€1,000.00');
-    assert.equal(x.$('[data-bal="TRY"]').textContent,'₺0.00');assert.equal(x.$('#activityCount').textContent,'0 transactions');
+    assert.equal(x.$('[data-bal="TRY"]'),null);assert.equal(x.$('#activityCount').textContent,'0 transactions');
     assert.doesNotMatch(x.$('#spacesList').textContent,/Yaz Tatili/);
     assert.equal(x.w.localStorage.getItem('veyra_token'),null);assert.equal(x.w.sessionStorage.getItem('veyra_token'),'live-token');
     x.click('.actions [data-action="topup"]');assert.equal(x.$('#m-topup').hidden,true);
@@ -239,6 +252,31 @@ function signedInWorkspace(){
  return {...x,requests};
 }
 async function signInFixture(x){x.click('#navSignIn');x.input('#siEmail','test@example.com');x.input('#siPass','StrongPassword123!');x.submit('#signinForm');await flush();await flush();}
+
+test('chosen currency opens first and additional currencies appear only after account creation',async()=>{
+ const user={id:7,full_name:'Currency User',email:'test@example.com',settings:{primary_currency:'CAD'}},accounts=[{id:81,currency:'CAD',kind:'current',balance:0,account_number:'DE001',owner_name:'Currency User'}],requests=[];
+ const x=workspace({snapshot:true,fetch:async(path,opts)=>{
+  requests.push(path);let data=path==='/auth/login'?{access_token:'currency-token'}:path==='/auth/me'?user:path==='/workspace'?{user,accounts,entries:[],recipients:[]}:{};
+  if(path==='/accounts/currencies'){assert.equal(JSON.parse(opts.body).currency,'AUD');data={id:82,currency:'AUD',kind:'current',balance:0,account_number:'DE002',owner_name:'Currency User'};accounts.push(data);}
+  return {ok:true,status:200,headers:new Map([['content-type','application/json']]),json:async()=>data};
+ }});
+ try{await signInFixture(x);assert.equal(x.$('#balLabel').textContent,'CAD balance');assert.equal(x.$('#balAmt').textContent,'C$ 0.00');assert.equal(x.w.document.querySelectorAll('#curRow .cur').length,1);assert.equal(x.$('#curRow .cur').dataset.cur,'CAD');assert.equal(x.$('#rgCurrency').options.length,7);
+  x.click('[data-action="add-currency"]');assert.equal(x.$('#m-currency').hidden,false);assert.equal(Array.from(x.$('#newCurrency').options).some(o=>o.value==='CAD'),false);x.$('#newCurrency').value='AUD';x.submit('#currencyF');await flush();
+  assert.equal(x.$('#balLabel').textContent,'AUD balance');assert.equal(x.$('#balAmt').textContent,'A$ 0.00');assert.equal(x.w.document.querySelectorAll('#curRow .cur').length,2);assert.equal(x.$('[data-cur="AUD"]').getAttribute('aria-selected'),'true');assert.equal(user.settings.primary_currency,'CAD');assert.equal(requests.filter(p=>p==='/accounts/currencies').length,1);assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
+});
+
+test('live deletion requires the emailed code and sends no typed confirmation word',async()=>{
+ const requests=[],user={id:7,full_name:'Test User',email:'test@example.com',settings:{primary_currency:'EUR'}};
+ const x=workspace({snapshot:true,fetch:async(path,opts)=>{
+  const body=opts.body?JSON.parse(opts.body):null;requests.push({path,body});let data=path==='/auth/login'?{access_token:'deletion-token'}:path==='/auth/me'?user:path==='/workspace'?{user,accounts:[{id:1,kind:'current',currency:'EUR',balance:0,account_number:'DE001'}],entries:[],recipients:[]}:{};
+  return {ok:true,status:200,headers:new Map([['content-type','application/json']]),json:async()=>data};
+ }});
+ try{await signInFixture(x);x.click('.who');x.click('[data-action="delete-account"]');x.input('#deletePassword','StrongPassword123!');x.submit('#deleteRequestF');await flush();assert.equal(x.$('#deleteConfirmF').hidden,false);assert.equal(x.$('#deleteConfirmation'),null);
+  x.submit('#deleteConfirmF');await flush();assert.match(x.$('#deleteErr').textContent,/six-digit/);assert.equal(requests.some(r=>r.path==='/auth/account'),false);
+  x.input('#deleteCode','123456');x.submit('#deleteConfirmF');await flush();const deleted=requests.find(r=>r.path==='/auth/account');assert.deepEqual(deleted.body,{password:'StrongPassword123!',code:'123456'});assert.equal(x.$('#app').hidden,true);assert.equal(x.errors.length,0);
+ }finally{x.dom.window.close();}
+});
 
 test('payments hub funds a real ledger account and surfaces card-control failures',async()=>{
  const x=signedInWorkspace();try{
