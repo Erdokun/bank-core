@@ -6,6 +6,12 @@
 <title>Veyra — Your money, in perspective.</title>
 <meta name="description" content="Bring your currencies, transfers and savings together in one considered workspace. Meet Veyra.">
 <meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Veyra">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
 <script>(function(){try{document.documentElement.dataset.theme=localStorage.getItem('veyra-theme')||'dark';document.documentElement.dataset.reducedMotion=localStorage.getItem('veyra-reduced-motion')||'false';}catch(e){document.documentElement.dataset.theme='dark';}})();</script>
 <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
 
@@ -573,6 +579,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 <link rel="stylesheet" href="/static/refinement.css">
 <link rel="stylesheet" href="/static/themes.css">
 <link rel="stylesheet" href="/static/select-controls.css">
+<link rel="stylesheet" href="/static/mobile.css">
 </head>
 <body>
 
@@ -673,6 +680,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
       <p class="form-err" id="siErr" role="alert"></p>
       <button class="btn-white" type="submit" id="siBtn">Sign In</button>
     </form>
+    <div class="mobile-only mobile-device-access"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M8 9v2m8-2v2m-8 5c2 2 6 2 8 0m-4-6v4h-1"/></svg><div><b>Your device. Your workspace.</b><p>Face ID is not enabled. Sign in with your password.</p></div></div>
     <div class="divider">take a look around</div>
     <button class="demo-button" type="button" data-action="demo">Explore with a demo account →</button>
     <p class="auth-foot">New to Veyra? <a href="#" data-action="to-register">Open an account</a></p>
@@ -908,6 +916,13 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
     </div>
     <footer class="workspace-footer"><span>Veyra · A clearer view of your money.</span><span id="workspaceStatus">Demo workspace · Sample money only</span></footer>
   </main>
+
+  <nav class="mobile-only mobile-dock" aria-label="Mobile workspace">
+    <button type="button" data-mobile-view="home" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span></button>
+    <button type="button" data-mobile-view="activity"><svg class="ic" aria-hidden="true"><use href="#i-transfer"/></svg><span>Activity</span></button>
+    <button type="button" data-mobile-view="card"><svg class="ic" aria-hidden="true"><use href="#i-topup"/></svg><span>Cards</span></button>
+    <button type="button" data-action="profile" data-mobile-profile aria-haspopup="dialog"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg><span>Profile</span></button>
+  </nav>
 
   <button class="fab" type="button" id="engineFab" data-action="engine" aria-haspopup="dialog"><svg class="ic"><use href="#i-bolt"/></svg>Engine Inspector</button>
 
@@ -1182,6 +1197,7 @@ select.li{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:poin
 <script src="/static/app.js" defer></script>
 <script src="/static/perspective.js" defer></script>
 <script src="/static/select-controls.js" defer></script>
+<script src="/static/mobile.js" defer></script>
 
 </body>
 </html>

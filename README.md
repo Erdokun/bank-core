@@ -15,6 +15,10 @@ Migrations run automatically. Existing database volumes are preserved.
 - Development email inbox: [localhost:8025](http://localhost:8025/)
 - Dependency readiness: [localhost:8000/health/ready](http://localhost:8000/health/ready)
 
+The phone interface adds a safe-area-aware dock, full-screen sign-in and Home Screen
+manifest below the existing 600px phone breakpoint. See [mobile web and iPhone testing](docs/mobile-web.md)
+for exact meta tags, manifest, opt-in Wi-Fi access and installation steps.
+
 Choose **Get started**, select your currency, enter your email, and verify its code. Registration opens only the selected currency with a zero balance and uses it as your default workspace currency. **Dashboard → Add currency** opens additional EUR, USD, GBP, TRY, CHF, CAD or AUD accounts at zero; retries reuse the same currency account. Existing accounts are preserved. **Settings → Preferences** changes your default currency. Open **Payments hub → Add money** to fund a sandbox balance. These credits are recorded against sandbox clearing accounts, with equal debit and credit entries.
 
 **Explore the demo** is a separate browser-local preview that now starts with zero balances, zero savings and no fabricated transaction history. Older demo caches are reset once while their savings goal names are preserved. Demo money never becomes an authenticated account balance. Funded demo data exists only in automated test fixtures. The Payments hub requires a backend account.

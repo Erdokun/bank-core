@@ -12,7 +12,7 @@ function workspace(options={}){
   const w=dom.window;
   const NativeDate=w.Date;
   w.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:['2026-11-15T12:00:00Z']));}static now(){return new NativeDate('2026-11-15T12:00:00Z').getTime();}};
-  w.matchMedia=()=>({matches:options.reduced!==false});
+  w.matchMedia=query=>({matches:query==='(max-width: 600px)'?!!options.phone:options.reduced!==false,addEventListener(){}});
   // Funded demo data belongs only to interaction tests. The product starts at zero.
   if(options.fundedDemo!==false)w.localStorage.setItem('veyra_state_v2:demo@veyra.local',fs.readFileSync('tests/fixtures/funded-demo.json','utf8'));
   w.fetch=async(path,opts)=>{if(path==='/workspace'&&!options.snapshot)return {ok:false,status:404,headers:new Map([['content-type','application/json']]),json:async()=>({detail:'Not found'})};return (options.fetch||(async()=>{throw Error('offline');}))(path,opts);};
@@ -23,6 +23,7 @@ function workspace(options={}){
   if(options.theme)w.document.documentElement.dataset.theme=options.theme;
   w.eval(source);
   w.eval(fs.readFileSync('app/static/select-controls.js','utf8'));
+  w.eval(fs.readFileSync('app/static/mobile.js','utf8'));
   const $=s=>w.document.querySelector(s);
   const click=s=>$(s).click();
   const submit=s=>$(s).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));

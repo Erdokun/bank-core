@@ -1,0 +1,6 @@
+# Opt-in phone testing; the default Compose network bindings are unchanged.
+# docker compose -f docker-compose.yml -f docker-compose.mobile.yml up -d --build --wait
+services:
+  api:
+    ports:
+      - "${VEYRA_PHONE_IP:-0.0.0.0}:8001:8000"
